@@ -11,7 +11,18 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: ubuntu-22.04
+            target: x86_64
+          - runner: ubuntu-22.04
+            target: aarch64
+          - runner: macos-14
+            target: aarch64
+          - runner: macos-13
+            target: x86_64
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,7 +32,31 @@ jobs:
         with:
           go-version: '1.24.2'
 
-      - name: Run tests
+      - name: Run tests (x86_64)
+        if: ${{ matrix.platform.target == 'x86_64' }}
         run: go test ./...
         env:
           LD_LIBRARY_PATH: ${{ github.workspace }}:${{ env.LD_LIBRARY_PATH }}
+
+      - name: Run tests (aarch64 on Ubuntu)
+        if: ${{ matrix.platform.target == 'aarch64' && startsWith(matrix.platform.runner, 'ubuntu') }}
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.platform.target }}
+          distro: ubuntu22.04
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            apt-get install -y --no-install-recommends wget
+            wget https://go.dev/dl/go1.24.2.linux-arm64.tar.gz
+            tar -C /usr/local -xzf go1.24.2.linux-arm64.tar.gz
+          run: |
+            export PATH=/usr/local/go/bin:$PATH
+            export LD_LIBRARY_PATH="${{ github.workspace }}:${LD_LIBRARY_PATH:-}"
+            go test ./...
+
+      - name: Run tests (aarch64 on macOS)
+        if: ${{ matrix.platform.target == 'aarch64' && startsWith(matrix.platform.runner, 'macos') }}
+        run: go test ./...
+        env:
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}:${{ env.DYLD_LIBRARY_PATH }}
