@@ -1,0 +1,14 @@
+[package]
+name = "rust-lib"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rust-crypto-lib-base = { git = "https://github.com/x10xchange/rust-crypto-lib-base.git", rev = "2bd93e6"}
+starknet-crypto = "0.7.4"
+
+[lib]
+name = "orderffi"
+crate-type = ["cdylib"]
