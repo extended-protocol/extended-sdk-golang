@@ -72,7 +72,7 @@ import (
     "fmt"
     "log"
     
-    "github.com/scaraven/golang-ex10-sdk"
+    "github.com/extended-protocol/extended-sdk-golang"
 )
 
 func main() {

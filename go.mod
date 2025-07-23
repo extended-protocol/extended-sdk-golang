@@ -1,3 +1,3 @@
-module github.com/scaraven/golang-ex10-sdk
+module github.com/extended-protocol/extended-sdk-golang
 
 go 1.24.0
