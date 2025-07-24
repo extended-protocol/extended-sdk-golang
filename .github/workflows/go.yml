@@ -11,18 +11,17 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.platform.runner }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        platform:
-          - runner: ubuntu-22.04
-            target: x86_64
-          - runner: ubuntu-22.04
-            target: aarch64
-          - runner: macos-14
-            target: aarch64
-          - runner: macos-13
-            target: x86_64
+        os:
+          - ubuntu-22.04
+          - macos-13
+          - macos-14
+        arch:
+          - x86_64
+          - aarch64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -32,36 +31,13 @@ jobs:
         with:
           go-version: '1.24.2'
 
-      - name: Run tests (x86_64)
-        if: ${{ matrix.platform.target == 'x86_64' }}
+      - name: Build & Test
+        shell: bash
         run: |
           ./build-lib.sh
+          if [[ "${{ matrix.os }}" == ubuntu* ]]; then
+            export LD_LIBRARY_PATH="${GITHUB_WORKSPACE}:${LD_LIBRARY_PATH:-}"
+          else
+            export DYLD_LIBRARY_PATH="${GITHUB_WORKSPACE}:${DYLD_LIBRARY_PATH:-}"
+          fi
           go test ./...
-        env:
-          LD_LIBRARY_PATH: ${{ github.workspace }}:${{ env.LD_LIBRARY_PATH }}
-
-      - name: Run tests (aarch64 on Ubuntu)
-        if: ${{ matrix.platform.target == 'aarch64' && startsWith(matrix.platform.runner, 'ubuntu') }}
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: ${{ matrix.platform.target }}
-          distro: ubuntu22.04
-          githubToken: ${{ github.token }}
-          install: |
-            apt-get update
-            apt-get install -y --no-install-recommends wget
-            wget https://go.dev/dl/go1.24.2.linux-arm64.tar.gz
-            tar -C /usr/local -xzf go1.24.2.linux-arm64.tar.gz
-          run: |
-            export PATH=/usr/local/go/bin:$PATH
-            ./build-lib.sh
-            export LD_LIBRARY_PATH="${{ github.workspace }}:${LD_LIBRARY_PATH:-}"
-            go test ./...
-
-      - name: Run tests (aarch64 on macOS)
-        if: ${{ matrix.platform.target == 'aarch64' && startsWith(matrix.platform.runner, 'macos') }}
-        run: |
-          ./build-lib.sh
-          go test ./...
-        env:
-          DYLD_LIBRARY_PATH: ${{ github.workspace }}:${{ env.DYLD_LIBRARY_PATH }}
