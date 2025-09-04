@@ -1,0 +1,21 @@
+package sdk
+
+// L2ConfigModel represents the L2 configuration
+type L2ConfigModel struct {
+	Type                 string `json:"type"`
+	CollateralID         string `json:"collateral_id"`
+	CollateralResolution int    `json:"collateral_resolution"`
+	SyntheticID          string `json:"synthetic_id"`
+	SyntheticResolution  int    `json:"synthetic_resolution"`
+}
+
+// MarketModel represents a market with its configuration
+type MarketModel struct {
+	Name                       string        `json:"name"`
+	AssetName                  string        `json:"asset_name"`
+	AssetPrecision            int           `json:"asset_precision"`
+	CollateralAssetName       string        `json:"collateral_asset_name"`
+	CollateralAssetPrecision  int           `json:"collateral_asset_precision"`
+	Active                    bool          `json:"active"`
+	L2Config                  L2ConfigModel `json:"l2_config"`
+}
