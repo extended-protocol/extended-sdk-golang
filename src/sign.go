@@ -1,8 +1,8 @@
 package sdk
 
 /*
-#cgo LDFLAGS: -L${SRCDIR} -lorderffi
-#cgo LDFLAGS: -Wl,-rpath,$ORIGIN
+#cgo LDFLAGS: -L${SRCDIR}/../ -lorderffi
+#cgo LDFLAGS: -Wl,-rpath,${SRCDIR}/../
 #include <stdlib.h>
 
 char* get_order_hash_ffi(

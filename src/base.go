@@ -99,25 +99,23 @@ func (m *BaseModule) GetURL(path string, query map[string]string) (string, error
 
 type StarkPerpetualAccount struct {
 	vault      uint64
-	privateKey *big.Int
-	publicKey  *big.Int
+	privateKey string
+	publicKey  string
 	apiKey     string
 }
 
 // NewStarkPerpetualAccount constructs the account, validating hex inputs.
 func NewStarkPerpetualAccount(vault uint64, privateKeyHex, publicKeyHex, apiKey string) (*StarkPerpetualAccount, error) {
-	priv, err := parseHexBigInt(privateKeyHex)
-	if err != nil {
+	if err := isHexString(privateKeyHex); err != nil {
 		return nil, fmt.Errorf("invalid private key: %w", err)
 	}
-	pub, err := parseHexBigInt(publicKeyHex)
-	if err != nil {
+	if err := isHexString(publicKeyHex); err != nil {
 		return nil, fmt.Errorf("invalid public key: %w", err)
 	}
 	return &StarkPerpetualAccount{
 		vault:      vault,
-		privateKey: priv,
-		publicKey:  pub,
+		privateKey: privateKeyHex,
+		publicKey:  publicKeyHex,
 		apiKey:     apiKey,
 	}, nil
 }
@@ -126,17 +124,18 @@ func NewStarkPerpetualAccount(vault uint64, privateKeyHex, publicKeyHex, apiKey 
 func (s *StarkPerpetualAccount) Vault() uint64 { return s.vault }
 
 // PublicKey returns the public key as a string.
-func (s *StarkPerpetualAccount) PublicKey() string { return s.publicKey.String() }
+func (s *StarkPerpetualAccount) PublicKey() string { return s.publicKey }
 
 // APIKey returns the API key string.
 func (s *StarkPerpetualAccount) APIKey() string { return s.apiKey }
 
 // Sign delegates to SignFunc, returning (r,s).
-func (stark *StarkPerpetualAccount) Sign(msgHash *big.Int) (*big.Int, *big.Int, error) {
-	if msgHash == nil {
-		return big.NewInt(0), big.NewInt(0), errors.New("msgHash is nil")
+func (stark *StarkPerpetualAccount) Sign(msgHash string) (*big.Int, *big.Int, error) {
+	if msgHash == "" {
+		return big.NewInt(0), big.NewInt(0), errors.New("msgHash is empty")
 	}
-	sig, err := SignMessage(msgHash.String(), stark.privateKey.String())
+
+	sig, err := SignMessage(msgHash, stark.privateKey)
 	if err != nil {
 		return big.NewInt(0), big.NewInt(0), err
 	}
