@@ -142,11 +142,11 @@ func (stark *StarkPerpetualAccount) Sign(msgHash string) (*big.Int, *big.Int, er
 
 	// Extract r, s from the signature string.
 	// Signature is in the format of {r}{s}{v}, where r, s and v are 64 chars each (192 hex chars).
-	r, overFlowR := big.NewInt(0).SetString(sig[:64], 16)
-	s, overFlowS := big.NewInt(0).SetString(sig[64:128], 16)
+	r, isGoodR := big.NewInt(0).SetString(sig[:64], 16)
+	s, isGoodS := big.NewInt(0).SetString(sig[64:128], 16)
 
-	if overFlowR || overFlowS {
-		return big.NewInt(0), big.NewInt(0), errors.New("signature values overflow")
+	if !isGoodR || !isGoodS {
+		return big.NewInt(0), big.NewInt(0), errors.New("big int setting failed")
 	}
 
 	return r, s, nil
