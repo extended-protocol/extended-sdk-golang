@@ -1,5 +1,75 @@
 package sdk
 
+// OrderType represents the type of order
+type OrderType string
+
+const (
+	OrderTypeLimit       OrderType = "limit"
+	OrderTypeMarket      OrderType = "market"
+	OrderTypeConditional OrderType = "conditional"
+	OrderTypeTpsl        OrderType = "tpsl"
+)
+
+// OrderSide represents the side of an order
+type OrderSide string
+
+const (
+	OrderSideBuy  OrderSide = "buy"
+	OrderSideSell OrderSide = "sell"
+)
+
+// TimeInForce represents the time-in-force setting
+type TimeInForce string
+
+const (
+	TimeInForceGTT TimeInForce = "GTT" // Good till time
+	TimeInForceFOK TimeInForce = "FOK" // Fill or kill
+	TimeInForceIOC TimeInForce = "IOC" // Immediate or cancel
+)
+
+// SelfTradeProtectionLevel represents the level of self trade protection
+type SelfTradeProtectionLevel string
+
+const (
+	SelfTradeProtectionDisabled SelfTradeProtectionLevel = "DISABLED"
+	SelfTradeProtectionAccount  SelfTradeProtectionLevel = "ACCOUNT"
+	SelfTradeProtectionClient   SelfTradeProtectionLevel = "CLIENT"
+)
+
+// TriggerPriceType represents the type of price used for triggering
+type TriggerPriceType string
+
+const (
+	TriggerPriceTypeLast  TriggerPriceType = "last"
+	TriggerPriceTypeMid   TriggerPriceType = "mid"
+	TriggerPriceTypeMark  TriggerPriceType = "mark"
+	TriggerPriceTypeIndex TriggerPriceType = "index"
+)
+
+// TriggerDirection represents the direction for trigger conditions
+type TriggerDirection string
+
+const (
+	TriggerDirectionUp   TriggerDirection = "up"
+	TriggerDirectionDown TriggerDirection = "down"
+)
+
+// ExecutionPriceType represents the type of price used for order execution
+type ExecutionPriceType string
+
+const (
+	ExecutionPriceTypeLimit  ExecutionPriceType = "limit"
+	ExecutionPriceTypeMarket ExecutionPriceType = "market"
+)
+
+// TpSlType represents the TPSL type determining order size
+type TpSlType string
+
+const (
+	TpSlTypeOrder    TpSlType = "order"
+	TpSlTypePosition TpSlType = "position"
+)
+
 // Signature represents a cryptographic signature
 type Signature struct {
 	R string `json:"r"`
@@ -15,43 +85,42 @@ type Settlement struct {
 
 // ConditionalTrigger represents trigger conditions for conditional orders
 type ConditionalTrigger struct {
-	TriggerPrice       string `json:"triggerPrice"`
-	TriggerPriceType   string `json:"triggerPriceType"`   // e.g., "LAST"
-	Direction          string `json:"direction"`          // e.g., "UP", "DOWN"
-	ExecutionPriceType string `json:"executionPriceType"` // e.g., "LIMIT", "MARKET"
+	TriggerPrice       string             `json:"triggerPrice"`
+	TriggerPriceType   TriggerPriceType   `json:"triggerPriceType"`
+	Direction          TriggerDirection   `json:"direction"`
+	ExecutionPriceType ExecutionPriceType `json:"executionPriceType"`
 }
 
 // TpSlTrigger represents take profit or stop loss trigger settings
 type TpSlTrigger struct {
-	TriggerPrice     string     `json:"triggerPrice"`
-	TriggerPriceType string     `json:"triggerPriceType"` // e.g., "LAST"
-	Price            string     `json:"price"`
-	PriceType        string     `json:"priceType"` // e.g., "LIMIT"
-	Settlement       Settlement `json:"settlement"`
+	TriggerPrice     string             `json:"triggerPrice"`
+	TriggerPriceType TriggerPriceType   `json:"triggerPriceType"`
+	Price            string             `json:"price"`
+	PriceType        ExecutionPriceType `json:"priceType"`
+	Settlement       Settlement         `json:"settlement"`
 }
 
 // PerpetualOrderModel represents a perpetual order
 type PerpetualOrderModel struct {
-	ID                       string              `json:"id"`
-	Market                   string              `json:"market"`
-	Type                     string              `json:"type"` // e.g., "CONDITIONAL", "LIMIT", "MARKET"
-	Side                     string              `json:"side"` // e.g., "BUY", "SELL"
-	Qty                      string              `json:"qty"`
-	Price                    string              `json:"price"`
-	TimeInForce              string              `json:"timeInForce"` // e.g., "GTT", "GTC", "IOC"
-	ExpiryEpochMillis        int64               `json:"expiryEpochMillis"`
-	Fee                      string              `json:"fee"`
-	Nonce                    string              `json:"nonce"`
-	Settlement               Settlement          `json:"settlement"`
-	ReduceOnly               bool                `json:"reduceOnly"`
-	PostOnly                 bool                `json:"postOnly"`
-	SelfTradeProtectionLevel string              `json:"selfTradeProtectionLevel"`    // e.g., "ACCOUNT"
-	Trigger                  *ConditionalTrigger `json:"trigger,omitempty"`           // Optional for conditional orders
-	TpSlType                 *string             `json:"tpSlType,omitempty"`          // e.g., "ORDER"
-	TakeProfit               *TpSlTrigger        `json:"takeProfit,omitempty"`        // Optional take profit settings
-	StopLoss                 *TpSlTrigger        `json:"stopLoss,omitempty"`          // Optional stop loss settings
-	BuilderFee               *string             `json:"builderFee,omitempty"`        // Optional builder fee
-	BuilderID                *int                `json:"builderId,omitempty"`         // Optional builder ID
-	CancelID                 *string             `json:"cancel_id,omitempty"`         // Optional field
-	DebuggingAmounts         interface{}         `json:"debugging_amounts,omitempty"` // TODO: Define StarkDebuggingOrderAmountsModel
+	ID                       string                   `json:"id"`
+	Market                   string                   `json:"market"`
+	Type                     OrderType                `json:"type"`
+	Side                     OrderSide                `json:"side"`
+	Qty                      string                   `json:"qty"`
+	Price                    string                   `json:"price"`
+	TimeInForce              TimeInForce              `json:"timeInForce"`
+	ExpiryEpochMillis        int64                    `json:"expiryEpochMillis"`
+	Fee                      string                   `json:"fee"`
+	Nonce                    string                   `json:"nonce"`
+	Settlement               Settlement               `json:"settlement"`
+	ReduceOnly               bool                     `json:"reduceOnly"`
+	PostOnly                 bool                     `json:"postOnly"`
+	SelfTradeProtectionLevel SelfTradeProtectionLevel `json:"selfTradeProtectionLevel"`
+	Trigger                  *ConditionalTrigger      `json:"trigger,omitempty"`
+	TpSlType                 *TpSlType                `json:"tpSlType,omitempty"`
+	TakeProfit               *TpSlTrigger             `json:"takeProfit,omitempty"`
+	StopLoss                 *TpSlTrigger             `json:"stopLoss,omitempty"`
+	BuilderFee               *string                  `json:"builderFee,omitempty"`
+	BuilderID                *int                     `json:"builderId,omitempty"`
+	CancelID                 *string                  `json:"cancelId,omitempty"`
 }
