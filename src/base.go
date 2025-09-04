@@ -132,9 +132,18 @@ func (s *StarkPerpetualAccount) PublicKey() string { return s.publicKey.String()
 func (s *StarkPerpetualAccount) APIKey() string { return s.apiKey }
 
 // Sign delegates to SignFunc, returning (r,s).
-func (s *StarkPerpetualAccount) Sign(msgHash *big.Int) (string, error) {
+func (stark *StarkPerpetualAccount) Sign(msgHash *big.Int) (*big.Int, *big.Int, error) {
 	if msgHash == nil {
-		return "", errors.New("msgHash is nil")
+		return big.NewInt(0), big.NewInt(0), errors.New("msgHash is nil")
 	}
-	return SignMessage(msgHash.String(), s.privateKey.String())
+	sig, err := SignMessage(msgHash.String(), stark.privateKey.String())
+	if err != nil {
+		return big.NewInt(0), big.NewInt(0), err
+	}
+
+	// Extract r, s from the signature string.
+	// Signature is in the format of {r}{s}{v}, where r, s and v are 64 chars each (192 hex chars).
+	r, _ := big.NewInt(0).SetString(sig[:64], 16)
+	s, _ := big.NewInt(0).SetString(sig[64:128], 16)
+	return r, s, nil
 }
