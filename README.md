@@ -22,8 +22,9 @@ This is a simple golang interface around the extended exchange rust sdk [here](h
 ```
 golang-ex10-sdk/
 ├── README.md           # This file
-├── sdk.go             # Main SDK implementation with CGO bindings
-├── sdk_test.go        # Unit tests
+└── src/
+    ├── sdk.go             # Main SDK implementation with CGO bindings
+    └── sdk_test.go        # Unit tests
 └── rust-lib/          # Rust library source code
     └── target/
         └── release/   # Built Rust library (.so file)

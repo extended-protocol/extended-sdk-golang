@@ -101,7 +101,7 @@ impl SerializableSig for rust_crypto_lib_base::StarkSignature {
         // Deserialize from hex string
         let r = Felt::from_hex_unchecked(&format!("0x{}", &hex[0..64]));
         let s = Felt::from_hex_unchecked(&format!("0x{}", &hex[64..128]));
-        let v = Felt::from_hex_unchecked(&format!("0x{}", &hex[128..130]));
+        let v = Felt::from_hex_unchecked(&format!("0x{}", &hex[128..192]));
 
         rust_crypto_lib_base::StarkSignature { r, s, v }
     }
