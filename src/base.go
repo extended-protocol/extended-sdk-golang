@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// Replace/remove these placeholders if real types already exist elsewhere.
 type EndpointConfig struct {
 	APIBaseURL string
 }
@@ -19,6 +18,7 @@ var (
 	ErrStarkAccountNotSet = errors.New("stark account is not set")
 )
 
+// BaseModule provides common functionality for API modules.
 type BaseModule struct {
 	endpointConfig EndpointConfig
 	apiKey         string
@@ -142,7 +142,12 @@ func (stark *StarkPerpetualAccount) Sign(msgHash string) (*big.Int, *big.Int, er
 
 	// Extract r, s from the signature string.
 	// Signature is in the format of {r}{s}{v}, where r, s and v are 64 chars each (192 hex chars).
-	r, _ := big.NewInt(0).SetString(sig[:64], 16)
-	s, _ := big.NewInt(0).SetString(sig[64:128], 16)
+	r, overFlowR := big.NewInt(0).SetString(sig[:64], 16)
+	s, overFlowS := big.NewInt(0).SetString(sig[64:128], 16)
+
+	if overFlowR || overFlowS {
+		return big.NewInt(0), big.NewInt(0), errors.New("signature values overflow")
+	}
+
 	return r, s, nil
 }
