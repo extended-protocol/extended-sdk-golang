@@ -2,6 +2,8 @@ package sdk
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
 	"net/http"
 	"net/url"
 	"time"
@@ -10,10 +12,6 @@ import (
 // Replace/remove these placeholders if real types already exist elsewhere.
 type EndpointConfig struct {
 	APIBaseURL string
-}
-
-type StarkPerpetualAccount struct {
-	// TODO: fill in fields
 }
 
 var (
@@ -97,4 +95,46 @@ func (m *BaseModule) GetURL(path string, query map[string]string) (string, error
 		u.RawQuery = q.Encode()
 	}
 	return u.String(), nil
+}
+
+type StarkPerpetualAccount struct {
+	vault      uint64
+	privateKey *big.Int
+	publicKey  *big.Int
+	apiKey     string
+}
+
+// NewStarkPerpetualAccount constructs the account, validating hex inputs.
+func NewStarkPerpetualAccount(vault uint64, privateKeyHex, publicKeyHex, apiKey string) (*StarkPerpetualAccount, error) {
+	priv, err := parseHexBigInt(privateKeyHex)
+	if err != nil {
+		return nil, fmt.Errorf("invalid private key: %w", err)
+	}
+	pub, err := parseHexBigInt(publicKeyHex)
+	if err != nil {
+		return nil, fmt.Errorf("invalid public key: %w", err)
+	}
+	return &StarkPerpetualAccount{
+		vault:      vault,
+		privateKey: priv,
+		publicKey:  pub,
+		apiKey:     apiKey,
+	}, nil
+}
+
+// Vault returns the vault id.
+func (s *StarkPerpetualAccount) Vault() uint64 { return s.vault }
+
+// PublicKey returns the public key as a string.
+func (s *StarkPerpetualAccount) PublicKey() string { return s.publicKey.String() }
+
+// APIKey returns the API key string.
+func (s *StarkPerpetualAccount) APIKey() string { return s.apiKey }
+
+// Sign delegates to SignFunc, returning (r,s).
+func (s *StarkPerpetualAccount) Sign(msgHash *big.Int) (string, error) {
+	if msgHash == nil {
+		return "", errors.New("msgHash is nil")
+	}
+	return SignMessage(msgHash.String(), s.privateKey.String())
 }
