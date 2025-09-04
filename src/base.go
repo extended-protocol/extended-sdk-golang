@@ -4,13 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
-
-type BaseModel struct {
-	PrivateKey string
-}
 
 // Replace/remove these placeholders if real types already exist elsewhere.
 type EndpointConfig struct {
@@ -87,12 +82,9 @@ func (m *BaseModule) Close() {
 	}
 }
 
-// GetURL builds a full URL with optional query params and simple {param} replacement.
-func (m *BaseModule) GetURL(path string, query map[string]string, pathParams map[string]string) (string, error) {
+// GetURL builds a full URL with optional query params.
+func (m *BaseModule) GetURL(path string, query map[string]string) (string, error) {
 	full := m.endpointConfig.APIBaseURL + path
-	for k, v := range pathParams {
-		full = strings.ReplaceAll(full, "{"+k+"}", v)
-	}
 	u, err := url.Parse(full)
 	if err != nil {
 		return "", err
