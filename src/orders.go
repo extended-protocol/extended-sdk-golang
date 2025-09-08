@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type OrderType string
@@ -126,8 +128,8 @@ type PerpetualOrderModel struct {
 // CreateOrderObjectParams represents the parameters for creating an order object
 type CreateOrderObjectParams struct {
 	Market                   MarketModel
-	SyntheticAmount          float64
-	Price                    float64
+	SyntheticAmount          decimal.Decimal
+	Price                    decimal.Decimal
 	Side                     OrderSide
 	CollateralPositionID     int
 	Signer                   func(string) (*big.Int, *big.Int) // Function that takes string and returns two values
@@ -140,7 +142,7 @@ type CreateOrderObjectParams struct {
 	TimeInForce              TimeInForce
 	SelfTradeProtectionLevel SelfTradeProtectionLevel
 	Nonce                    *int
-	BuilderFee               *string // Using string for Decimal equivalent
+	BuilderFee               *decimal.Decimal
 	BuilderID                *int
 }
 
@@ -150,28 +152,38 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 		*params.ExpireTime = time.Now().Add(1 * time.Hour)
 	}
 
-
 	// Error if nonce is nil, we keep the input as a pointer so that
 	// it is the same as the input to the function
 	if params.Nonce == nil {
 		return nil, fmt.Errorf("nonce must be provided")
 	}
 
+	// If we are buying, then we round up, otherwise we round down
+	// round_up := params.Side == OrderSideBuy
+	// collateral_amount := params.SyntheticAmount.Mul(params.Price)
+
 	// For now we only use the default fee type
 	// TODO: Allow users to add different fee types
-	// fees := DefaultFees
+	fees := DefaultFees
+
+	total_fee := fees.TakerFeeRate
+	if params.BuilderFee != nil {
+		total_fee = total_fee.Add(*params.BuilderFee)
+	}
+	// fee_amount := total_fee.Mul(collateral_amount)
 
 
+	fee_builder_str := params.BuilderFee.String()
 	order := &PerpetualOrderModel{
 		Market:                   params.Market.Name,
 		Type:                     OrderTypeLimit,
 		Side:                     params.Side,
-		Qty:                      fmt.Sprintf("%f", params.SyntheticAmount),
-		Price:                    fmt.Sprintf("%f", params.Price),
+		Qty:                      params.SyntheticAmount.String(),
+		Price:                    params.Price.String(),
 		TimeInForce:              params.TimeInForce,
 		PostOnly:                 params.PostOnly,
 		SelfTradeProtectionLevel: params.SelfTradeProtectionLevel,
-		BuilderFee:               params.BuilderFee,
+		BuilderFee:               &fee_builder_str,
 		BuilderID:                params.BuilderID,
 		CancelID:                 params.PreviousOrderExternalID,
 	}
