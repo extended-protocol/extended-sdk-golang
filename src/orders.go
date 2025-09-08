@@ -1,6 +1,5 @@
 package sdk
 
-// OrderType represents the type of order
 type OrderType string
 
 const (
@@ -10,7 +9,6 @@ const (
 	OrderTypeTpsl        OrderType = "tpsl"
 )
 
-// OrderSide represents the side of an order
 type OrderSide string
 
 const (
@@ -27,7 +25,6 @@ const (
 	TimeInForceIOC TimeInForce = "IOC" // Immediate or cancel
 )
 
-// SelfTradeProtectionLevel represents the level of self trade protection
 type SelfTradeProtectionLevel string
 
 const (
@@ -36,7 +33,6 @@ const (
 	SelfTradeProtectionClient   SelfTradeProtectionLevel = "CLIENT"
 )
 
-// TriggerPriceType represents the type of price used for triggering
 type TriggerPriceType string
 
 const (
@@ -46,7 +42,6 @@ const (
 	TriggerPriceTypeIndex TriggerPriceType = "index"
 )
 
-// TriggerDirection represents the direction for trigger conditions
 type TriggerDirection string
 
 const (
@@ -76,14 +71,12 @@ type Signature struct {
 	S string `json:"s"`
 }
 
-// Settlement represents settlement information for an order
 type Settlement struct {
 	Signature          Signature `json:"signature"`
 	StarkKey           string    `json:"starkKey"`
 	CollateralPosition string    `json:"collateralPosition"`
 }
 
-// ConditionalTrigger represents trigger conditions for conditional orders
 type ConditionalTrigger struct {
 	TriggerPrice       string             `json:"triggerPrice"`
 	TriggerPriceType   TriggerPriceType   `json:"triggerPriceType"`
@@ -100,7 +93,6 @@ type TpSlTrigger struct {
 	Settlement       Settlement         `json:"settlement"`
 }
 
-// PerpetualOrderModel represents a perpetual order
 type PerpetualOrderModel struct {
 	ID                       string                   `json:"id"`
 	Market                   string                   `json:"market"`
