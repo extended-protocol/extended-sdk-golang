@@ -15,7 +15,6 @@ type TradingFeeModel struct {
 	BuilderFeeRate float64 `json:"builder_fee_rate"` // Using float64 for decimal rates
 }
 
-// DefaultFees represents the default trading fees
 var DefaultFees = TradingFeeModel{
 	Market:         "BTC-USD",
 	MakerFeeRate:   0.0002, // 2/10000 = 0.0002

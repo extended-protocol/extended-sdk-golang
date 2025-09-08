@@ -1,6 +1,5 @@
 package sdk
 
-// L2ConfigModel represents the L2 configuration
 type L2ConfigModel struct {
 	Type                 string `json:"type"`
 	CollateralID         string `json:"collateral_id"`
@@ -9,7 +8,6 @@ type L2ConfigModel struct {
 	SyntheticResolution  int    `json:"synthetic_resolution"`
 }
 
-// MarketModel represents a market with its configuration
 type MarketModel struct {
 	Name                       string        `json:"name"`
 	AssetName                  string        `json:"asset_name"`
