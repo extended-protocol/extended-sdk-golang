@@ -1,5 +1,7 @@
 package sdk
 
+import "math/big"
+
 type OrderType string
 
 const (
@@ -115,4 +117,59 @@ type PerpetualOrderModel struct {
 	BuilderFee               *string                  `json:"builderFee,omitempty"`
 	BuilderID                *int                     `json:"builderId,omitempty"`
 	CancelID                 *string                  `json:"cancelId,omitempty"`
+}
+
+// CreateOrderObjectParams represents the parameters for creating an order object
+type CreateOrderObjectParams struct {
+	Market                   MarketModel
+	SyntheticAmount          string // Using string for Decimal equivalent
+	Price                    string // Using string for Decimal equivalent
+	Side                     OrderSide
+	CollateralPositionID     int
+	Fees                     interface{}                       // TODO: Define TradingFeeModel
+	Signer                   func(string) (*big.Int, *big.Int) // Function that takes string and returns two values
+	PublicKey                int
+	StarknetDomain           interface{} // TODO: Define StarknetDomain
+	ExactOnly                bool
+	ExpireTime               interface{} // TODO: Define time equivalent (could be *time.Time)
+	PostOnly                 bool
+	PreviousOrderExternalID  *string
+	OrderExternalID          *string
+	TimeInForce              TimeInForce
+	SelfTradeProtectionLevel SelfTradeProtectionLevel
+	Nonce                    *int
+	BuilderFee               *string // Using string for Decimal equivalent
+	BuilderID                *int
+}
+
+// CreateOrderObject creates a PerpetualOrderModel with the given parameters
+func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, error) {
+	// TODO: Implement the order creation logic
+	// This is a placeholder implementation
+
+	order := &PerpetualOrderModel{
+		Market:                   params.Market.Name,
+		Type:                     OrderTypeLimit, // Default, should be determined by logic
+		Side:                     params.Side,
+		Qty:                      params.SyntheticAmount,
+		Price:                    params.Price,
+		TimeInForce:              params.TimeInForce,
+		PostOnly:                 params.PostOnly,
+		SelfTradeProtectionLevel: params.SelfTradeProtectionLevel,
+		BuilderFee:               params.BuilderFee,
+		BuilderID:                params.BuilderID,
+		CancelID:                 params.PreviousOrderExternalID,
+	}
+
+	// Set order ID
+	if params.OrderExternalID != nil {
+		order.ID = *params.OrderExternalID
+	}
+
+	// Set nonce
+	if params.Nonce != nil {
+		order.Nonce = string(rune(*params.Nonce))
+	}
+
+	return order, nil
 }
