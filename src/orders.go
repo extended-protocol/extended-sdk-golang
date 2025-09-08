@@ -1,6 +1,10 @@
 package sdk
 
-import "math/big"
+import (
+	"fmt"
+	"math/big"
+	"time"
+)
 
 type OrderType string
 
@@ -122,16 +126,16 @@ type PerpetualOrderModel struct {
 // CreateOrderObjectParams represents the parameters for creating an order object
 type CreateOrderObjectParams struct {
 	Market                   MarketModel
-	SyntheticAmount          string // Using string for Decimal equivalent
-	Price                    string // Using string for Decimal equivalent
+	SyntheticAmount          float64
+	Price                    float64
 	Side                     OrderSide
 	CollateralPositionID     int
-	Fees                     interface{}                       // TODO: Define TradingFeeModel
+	Fees                     TradingFeeModel
 	Signer                   func(string) (*big.Int, *big.Int) // Function that takes string and returns two values
 	PublicKey                int
-	StarknetDomain           interface{} // TODO: Define StarknetDomain
+	StarknetDomain           StarknetDomain
 	ExactOnly                bool
-	ExpireTime               interface{} // TODO: Define time equivalent (could be *time.Time)
+	ExpireTime               *time.Time
 	PostOnly                 bool
 	PreviousOrderExternalID  *string
 	OrderExternalID          *string
@@ -149,10 +153,10 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 
 	order := &PerpetualOrderModel{
 		Market:                   params.Market.Name,
-		Type:                     OrderTypeLimit, // Default, should be determined by logic
+		Type:                     OrderTypeLimit,
 		Side:                     params.Side,
-		Qty:                      params.SyntheticAmount,
-		Price:                    params.Price,
+		Qty:                      fmt.Sprintf("%f", params.SyntheticAmount),
+		Price:                    fmt.Sprintf("%f", params.Price),
 		TimeInForce:              params.TimeInForce,
 		PostOnly:                 params.PostOnly,
 		SelfTradeProtectionLevel: params.SelfTradeProtectionLevel,
