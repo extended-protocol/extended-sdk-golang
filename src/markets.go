@@ -3,9 +3,9 @@ package sdk
 type L2ConfigModel struct {
 	Type                 string `json:"type"`
 	CollateralID         string `json:"collateral_id"`
-	CollateralResolution int    `json:"collateral_resolution"`
+	CollateralResolution int64    `json:"collateral_resolution"`
 	SyntheticID          string `json:"synthetic_id"`
-	SyntheticResolution  int    `json:"synthetic_resolution"`
+	SyntheticResolution  int64    `json:"synthetic_resolution"`
 }
 
 type MarketModel struct {

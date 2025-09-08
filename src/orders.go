@@ -148,6 +148,8 @@ type CreateOrderObjectParams struct {
 
 // CreateOrderObject creates a PerpetualOrderModel with the given parameters
 func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, error) {
+	market := params.Market
+
 	if params.ExpireTime == nil {
 		*params.ExpireTime = time.Now().Add(1 * time.Hour)
 	}
@@ -159,8 +161,8 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 	}
 
 	// If we are buying, then we round up, otherwise we round down
-	// round_up := params.Side == OrderSideBuy
-	// collateral_amount := params.SyntheticAmount.Mul(params.Price)
+	is_buying_synthetic := params.Side == OrderSideBuy
+	collateral_amount := params.SyntheticAmount.Mul(params.Price)
 
 	// For now we only use the default fee type
 	// TODO: Allow users to add different fee types
@@ -170,8 +172,31 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 	if params.BuilderFee != nil {
 		total_fee = total_fee.Add(*params.BuilderFee)
 	}
-	// fee_amount := total_fee.Mul(collateral_amount)
+	
+	fee_amount := total_fee.Mul(collateral_amount)
 
+	
+	stark_collateral_amount_dec := collateral_amount.Mul(decimal.NewFromInt(market.L2Config.CollateralResolution))
+	stark_synthetic_amount_dec := params.SyntheticAmount.Mul(decimal.NewFromInt(market.L2Config.SyntheticResolution))
+	
+	// Round accordingly
+	if is_buying_synthetic {
+		stark_collateral_amount_dec = stark_collateral_amount_dec.Ceil()
+		stark_synthetic_amount_dec = stark_synthetic_amount_dec.Ceil()
+	} else {
+		stark_collateral_amount_dec = stark_collateral_amount_dec.Floor()
+		stark_synthetic_amount_dec = stark_synthetic_amount_dec.Floor()
+	}
+
+	stark_collateral_amount := stark_collateral_amount_dec.IntPart()
+	stark_synthetic_amount := stark_synthetic_amount_dec.IntPart()
+	stark_fee_part := fee_amount.Mul(decimal.NewFromInt(market.L2Config.CollateralResolution)).Ceil().IntPart()
+
+	if is_buying_synthetic {
+		stark_collateral_amount = -stark_collateral_amount
+	} else {
+		stark_synthetic_amount = -stark_synthetic_amount
+	}
 
 	fee_builder_str := params.BuilderFee.String()
 	order := &PerpetualOrderModel{
@@ -190,3 +215,5 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 
 	return order, nil
 }
+
+func getOrderHash()
