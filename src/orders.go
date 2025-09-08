@@ -130,11 +130,9 @@ type CreateOrderObjectParams struct {
 	Price                    float64
 	Side                     OrderSide
 	CollateralPositionID     int
-	Fees                     TradingFeeModel
 	Signer                   func(string) (*big.Int, *big.Int) // Function that takes string and returns two values
 	PublicKey                int
 	StarknetDomain           StarknetDomain
-	ExactOnly                bool
 	ExpireTime               *time.Time
 	PostOnly                 bool
 	PreviousOrderExternalID  *string
@@ -148,8 +146,21 @@ type CreateOrderObjectParams struct {
 
 // CreateOrderObject creates a PerpetualOrderModel with the given parameters
 func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, error) {
-	// TODO: Implement the order creation logic
-	// This is a placeholder implementation
+	if params.ExpireTime == nil {
+		*params.ExpireTime = time.Now().Add(1 * time.Hour)
+	}
+
+
+	// Error if nonce is nil, we keep the input as a pointer so that
+	// it is the same as the input to the function
+	if params.Nonce == nil {
+		return nil, fmt.Errorf("nonce must be provided")
+	}
+
+	// For now we only use the default fee type
+	// TODO: Allow users to add different fee types
+	// fees := DefaultFees
+
 
 	order := &PerpetualOrderModel{
 		Market:                   params.Market.Name,
@@ -163,16 +174,6 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 		BuilderFee:               params.BuilderFee,
 		BuilderID:                params.BuilderID,
 		CancelID:                 params.PreviousOrderExternalID,
-	}
-
-	// Set order ID
-	if params.OrderExternalID != nil {
-		order.ID = *params.OrderExternalID
-	}
-
-	// Set nonce
-	if params.Nonce != nil {
-		order.Nonce = string(rune(*params.Nonce))
 	}
 
 	return order, nil
