@@ -11,7 +11,7 @@ type StarknetDomain struct {
 
 // TradingFeeModel represents trading fees for a market
 type TradingFeeModel struct {
-	Market         string  `json:"market"`
+	Market         string          `json:"market"`
 	MakerFeeRate   decimal.Decimal `json:"maker_fee_rate"`
 	TakerFeeRate   decimal.Decimal `json:"taker_fee_rate"`
 	BuilderFeeRate decimal.Decimal `json:"builder_fee_rate"`
@@ -23,5 +23,3 @@ var DefaultFees = TradingFeeModel{
 	TakerFeeRate:   decimal.NewFromFloat(0.0005), // 5/10000 = 0.0005
 	BuilderFeeRate: decimal.NewFromFloat(0),      // 0
 }
-
-

@@ -126,12 +126,12 @@ func (suite *OrdersTestSuite) TestCreateSellOrderWithDefaultExpiration() {
 		"nonce":                    "1473459052",
 		"selfTradeProtectionLevel": "ACCOUNT",
 		"cancelId":                 nil,
-		"trigger":    nil,
-		"tpSlType":   nil,
-		"takeProfit": nil,
-		"stopLoss":   nil,
-		"builderFee": nil,
-		"builderId":  nil,
+		"trigger":                  nil,
+		"tpSlType":                 nil,
+		"takeProfit":               nil,
+		"stopLoss":                 nil,
+		"builderFee":               nil,
+		"builderId":                nil,
 	}
 
 	// Assert JSON structure matches expected (excluding id since it's generated)
