@@ -77,6 +77,88 @@ func (suite *OrdersTestSuite) SetupTest() {
 }
 
 func (suite *OrdersTestSuite) TestCreateSellOrderWithDefaultExpiration() {
+	// Create order parameters
+	params := CreateOrderObjectParams{
+		Market:                   suite.market,
+		Account:                  *suite.account,
+		SyntheticAmount:          decimal.RequireFromString("0.00100000"),
+		Price:                    decimal.RequireFromString("43445.11680000"),
+		Side:                     OrderSideSell,
+		Signer:                   suite.account.Sign,
+		StarknetDomain:           suite.starknetDomain,
+		ExpireTime:               nil,
+		PostOnly:                 false,
+		PreviousOrderExternalID:  nil,
+		OrderExternalID:          nil,
+		TimeInForce:              TimeInForceGTT,
+		SelfTradeProtectionLevel: SelfTradeProtectionAccount,
+		Nonce:                    &suite.nonce,
+		BuilderFee:               nil,
+		BuilderID:                nil,
+	}
+
+	// Create the order
+	order, err := CreateOrderObject(params)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(order)
+
+	// Convert order to JSON for comparison
+	orderJSON, err := json.Marshal(order)
+	suite.Require().NoError(err)
+
+	// Parse JSON into a map for easier comparison
+	var actualOrder map[string]interface{}
+	err = json.Unmarshal(orderJSON, &actualOrder)
+	suite.Require().NoError(err)
+
+	// Expected JSON structure (matching Python test output)
+	expectedOrder := map[string]interface{}{
+		"id":                       "529621978301228831750156704671293558063128025271079340676658105549022202327",
+		"market":                   "BTC-USD",
+		"type":                     "limit",
+		"side":                     "sell",
+		"qty":                      "0.001",
+		"price":                    "43445.1168",
+		"reduceOnly":               false,
+		"postOnly":                 false,
+		"timeInForce":              "GTT",
+		"fee":                      "0.0005",
+		"nonce":                    "1473459052",
+		"selfTradeProtectionLevel": "ACCOUNT",
+		"cancelId":                 nil,
+		"trigger":    nil,
+		"tpSlType":   nil,
+		"takeProfit": nil,
+		"stopLoss":   nil,
+		"builderFee": nil,
+		"builderId":  nil,
+	}
+
+	// Assert JSON structure matches expected (excluding id since it's generated)
+	suite.Equal(expectedOrder["market"], actualOrder["market"])
+	suite.Equal(expectedOrder["type"], actualOrder["type"])
+	suite.Equal(expectedOrder["side"], actualOrder["side"])
+	suite.Equal(expectedOrder["qty"], actualOrder["qty"])
+	suite.Equal(expectedOrder["price"], actualOrder["price"])
+	suite.Equal(expectedOrder["reduceOnly"], actualOrder["reduceOnly"])
+	suite.Equal(expectedOrder["postOnly"], actualOrder["postOnly"])
+	suite.Equal(expectedOrder["timeInForce"], actualOrder["timeInForce"])
+	suite.Equal(expectedOrder["fee"], actualOrder["fee"])
+	suite.Equal(expectedOrder["nonce"], actualOrder["nonce"])
+	suite.Equal(expectedOrder["selfTradeProtectionLevel"], actualOrder["selfTradeProtectionLevel"])
+	suite.Equal(expectedOrder["cancelId"], actualOrder["cancelId"])
+	suite.Equal(expectedOrder["trigger"], actualOrder["trigger"])
+	suite.Equal(expectedOrder["tpSlType"], actualOrder["tpSlType"])
+	suite.Equal(expectedOrder["takeProfit"], actualOrder["takeProfit"])
+	suite.Equal(expectedOrder["stopLoss"], actualOrder["stopLoss"])
+	suite.Equal(expectedOrder["builderFee"], actualOrder["builderFee"])
+	suite.Equal(expectedOrder["builderId"], actualOrder["builderId"])
+
+	// Verify ID is not empty (it's generated dynamically)
+	suite.NotEmpty(actualOrder["id"])
+}
+
+func (suite *OrdersTestSuite) TestCreateSellOrder() {
 	// Set expiry time (1 hour from frozen time = 1704420537000 milliseconds)
 	expiryTime := suite.frozenTime.Add(1 * time.Hour)
 
@@ -174,7 +256,8 @@ func (suite *OrdersTestSuite) TestCreateSellOrderWithDefaultExpiration() {
 
 func (suite *OrdersTestSuite) TestCreateBuyOrderWithClientProtection() {
 	// Set expiry time (1 hour from frozen time)
-	expiryTime := suite.frozenTime.Add(1 * time.Hour)
+	// @freeze_time("2024-01-05 01:08:56.860694")
+	expiryTime := time.Date(2024, 1, 5, 1, 8, 56, 860694000, time.UTC).Add(14 * 24 * time.Hour)
 
 	// Create order parameters for buy order
 	params := CreateOrderObjectParams{
@@ -220,7 +303,7 @@ func (suite *OrdersTestSuite) TestCreateBuyOrderWithClientProtection() {
 		"reduceOnly":               false,
 		"postOnly":                 false,
 		"timeInForce":              "GTT",
-		"expiryEpochMillis":        float64(1704420537000),
+		"expiryEpochMillis":        float64(1705626536861),
 		"fee":                      "0.0005",
 		"nonce":                    "1473459052",
 		"selfTradeProtectionLevel": "CLIENT",

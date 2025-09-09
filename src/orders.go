@@ -150,7 +150,8 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 	market := params.Market
 
 	if params.ExpireTime == nil {
-		*params.ExpireTime = time.Now().Add(1 * time.Hour)
+		cur := time.Now().Add(1 * time.Hour)
+		params.ExpireTime = &cur
 	}
 
 	// Error if nonce is nil, we keep the input as a pointer so that
@@ -283,7 +284,13 @@ func HashOrder(params HashOrderParams) (string, error) {
 	// Add 14 days buffer to expiration timestamp
 	expireTimeWithBuffer := params.ExpirationTimestamp.Add(14 * 24 * time.Hour)
 
-	expireTimeAsSeconds := expireTimeWithBuffer.Unix()
+	// Round UP to the nearest second
+	expireTimeRounded := expireTimeWithBuffer.Truncate(time.Second)
+	if expireTimeWithBuffer.After(expireTimeRounded) {
+		expireTimeRounded = expireTimeRounded.Add(time.Second)
+	}
+
+	expireTimeAsSeconds := expireTimeRounded.Unix()
 
 	// Call the existing GetOrderHash function from sign.go
 	hash, err := GetOrderHash(
