@@ -172,6 +172,172 @@ func (suite *OrdersTestSuite) TestCreateSellOrderWithDefaultExpiration() {
 	suite.NotEmpty(actualOrder["id"])
 }
 
+func (suite *OrdersTestSuite) TestCreateBuyOrderWithClientProtection() {
+	// Set expiry time (1 hour from frozen time)
+	expiryTime := suite.frozenTime.Add(1 * time.Hour)
+
+	// Create order parameters for buy order
+	params := CreateOrderObjectParams{
+		Market:                   suite.market,
+		Account:                  *suite.account,
+		SyntheticAmount:          decimal.RequireFromString("0.00100000"),
+		Price:                    decimal.RequireFromString("43445.11680000"),
+		Side:                     OrderSideBuy,
+		Signer:                   suite.account.Sign,
+		StarknetDomain:           suite.starknetDomain,
+		ExpireTime:               &expiryTime,
+		PostOnly:                 false,
+		PreviousOrderExternalID:  nil,
+		OrderExternalID:          nil,
+		TimeInForce:              TimeInForceGTT,
+		SelfTradeProtectionLevel: SelfTradeProtectionClient,
+		Nonce:                    &suite.nonce,
+		BuilderFee:               nil,
+		BuilderID:                nil,
+	}
+
+	// Create the order
+	order, err := CreateOrderObject(params)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(order)
+
+	// Convert order to JSON for comparison
+	orderJSON, err := json.Marshal(order)
+	suite.Require().NoError(err)
+
+	// Parse JSON into a map for easier comparison
+	var actualOrder map[string]interface{}
+	err = json.Unmarshal(orderJSON, &actualOrder)
+	suite.Require().NoError(err)
+
+	// Expected JSON structure for buy order
+	expectedOrder := map[string]interface{}{
+		"market":                   "BTC-USD",
+		"type":                     "limit",
+		"side":                     "buy",
+		"qty":                      "0.001",
+		"price":                    "43445.1168",
+		"reduceOnly":               false,
+		"postOnly":                 false,
+		"timeInForce":              "GTT",
+		"expiryEpochMillis":        float64(1704420537000),
+		"fee":                      "0.0005",
+		"nonce":                    "1473459052",
+		"selfTradeProtectionLevel": "CLIENT",
+		"cancelId":                 nil,
+		"settlement": map[string]interface{}{
+			"signature": map[string]interface{}{
+				"r": "0xa55625c7d5f1b85bed22556fc805224b8363074979cf918091d9ddb1403e13",
+				"s": "0x504caf634d859e643569743642ccf244434322859b2421d76f853af43ae7a46",
+			},
+			"starkKey":           TestPublicKeyHex,
+			"collateralPosition": "10002",
+		},
+		"trigger":    nil,
+		"tpSlType":   nil,
+		"takeProfit": nil,
+		"stopLoss":   nil,
+		"builderFee": nil,
+		"builderId":  nil,
+	}
+
+	// Assert key fields match expected
+	suite.Equal(expectedOrder["market"], actualOrder["market"])
+	suite.Equal(expectedOrder["type"], actualOrder["type"])
+	suite.Equal(expectedOrder["side"], actualOrder["side"])
+	suite.Equal(expectedOrder["qty"], actualOrder["qty"])
+	suite.Equal(expectedOrder["price"], actualOrder["price"])
+	suite.Equal(expectedOrder["selfTradeProtectionLevel"], actualOrder["selfTradeProtectionLevel"])
+	suite.Equal(expectedOrder["settlement"], actualOrder["settlement"])
+	suite.NotEmpty(actualOrder["id"])
+}
+
+func (suite *OrdersTestSuite) TestCancelPreviousOrder() {
+	// Set expiry time (1 hour from frozen time)
+	expiryTime := suite.frozenTime.Add(1 * time.Hour)
+	previousOrderID := "previous_custom_id"
+
+	// Create order parameters with previous order ID
+	params := CreateOrderObjectParams{
+		Market:                   suite.market,
+		Account:                  *suite.account,
+		SyntheticAmount:          decimal.RequireFromString("0.00100000"),
+		Price:                    decimal.RequireFromString("43445.11680000"),
+		Side:                     OrderSideBuy,
+		Signer:                   suite.account.Sign,
+		StarknetDomain:           suite.starknetDomain,
+		ExpireTime:               &expiryTime,
+		PostOnly:                 false,
+		PreviousOrderExternalID:  &previousOrderID,
+		OrderExternalID:          nil,
+		TimeInForce:              TimeInForceGTT,
+		SelfTradeProtectionLevel: SelfTradeProtectionAccount,
+		Nonce:                    &suite.nonce,
+		BuilderFee:               nil,
+		BuilderID:                nil,
+	}
+
+	// Create the order
+	order, err := CreateOrderObject(params)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(order)
+
+	// Convert order to JSON for comparison
+	orderJSON, err := json.Marshal(order)
+	suite.Require().NoError(err)
+
+	// Parse JSON into a map for easier comparison
+	var actualOrder map[string]interface{}
+	err = json.Unmarshal(orderJSON, &actualOrder)
+	suite.Require().NoError(err)
+
+	// Assert cancelId is set correctly
+	suite.Equal(previousOrderID, actualOrder["cancelId"])
+}
+
+func (suite *OrdersTestSuite) TestExternalOrderID() {
+	// Set expiry time (1 hour from frozen time)
+	expiryTime := suite.frozenTime.Add(1 * time.Hour)
+	customOrderID := "custom_id"
+
+	// Create order parameters with custom order ID
+	params := CreateOrderObjectParams{
+		Market:                   suite.market,
+		Account:                  *suite.account,
+		SyntheticAmount:          decimal.RequireFromString("0.00100000"),
+		Price:                    decimal.RequireFromString("43445.11680000"),
+		Side:                     OrderSideBuy,
+		Signer:                   suite.account.Sign,
+		StarknetDomain:           suite.starknetDomain,
+		ExpireTime:               &expiryTime,
+		PostOnly:                 false,
+		PreviousOrderExternalID:  nil,
+		OrderExternalID:          &customOrderID,
+		TimeInForce:              TimeInForceGTT,
+		SelfTradeProtectionLevel: SelfTradeProtectionAccount,
+		Nonce:                    &suite.nonce,
+		BuilderFee:               nil,
+		BuilderID:                nil,
+	}
+
+	// Create the order
+	order, err := CreateOrderObject(params)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(order)
+
+	// Convert order to JSON for comparison
+	orderJSON, err := json.Marshal(order)
+	suite.Require().NoError(err)
+
+	// Parse JSON into a map for easier comparison
+	var actualOrder map[string]interface{}
+	err = json.Unmarshal(orderJSON, &actualOrder)
+	suite.Require().NoError(err)
+
+	// Assert custom ID is set correctly
+	suite.Equal(customOrderID, actualOrder["id"])
+}
+
 // TestOrdersTestSuite runs the test suite
 func TestOrdersTestSuite(t *testing.T) {
 	suite.Run(t, new(OrdersTestSuite))
