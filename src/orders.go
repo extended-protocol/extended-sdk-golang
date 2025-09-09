@@ -133,7 +133,6 @@ type CreateOrderObjectParams struct {
 	Price                    decimal.Decimal
 	Side                     OrderSide
 	Signer                   func(string) (*big.Int, *big.Int, error) // Function that takes string and returns two values
-	PublicKey                int
 	StarknetDomain           StarknetDomain
 	ExpireTime               *time.Time
 	PostOnly                 bool
@@ -206,7 +205,7 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 		Nonce:               *params.Nonce,
 		PositionID:          int(params.Account.vault),
 		ExpirationTimestamp: *params.ExpireTime,
-		PublicKey:           params.PublicKey,
+		PublicKey:           params.Account.PublicKey(),
 		StarknetDomain:      params.StarknetDomain,
 	})
 
@@ -221,8 +220,8 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 
 	settlement := Settlement{
 		Signature: Signature{
-			fmt.Sprintf("%064x", sig_r),
-			fmt.Sprintf("%064x", sig_s),
+			fmt.Sprintf("0x%x", sig_r),
+			fmt.Sprintf("0x%x", sig_s),
 		},
 		StarkKey:           params.Account.PublicKey(),
 		CollateralPosition: fmt.Sprintf("%d", params.Account.Vault()),
@@ -274,7 +273,7 @@ type HashOrderParams struct {
 	Nonce               int
 	PositionID          int
 	ExpirationTimestamp time.Time
-	PublicKey           int
+	PublicKey           string
 	StarknetDomain      StarknetDomain
 }
 
@@ -297,7 +296,7 @@ func HashOrder(params HashOrderParams) (string, error) {
 		fmt.Sprintf("%d", params.MaxFee),           // fee_amount
 		fmt.Sprintf("%d", expireTimeAsSeconds),     // expiration
 		fmt.Sprintf("%d", params.Nonce),            // salt (nonce)
-		fmt.Sprintf("%d", params.PublicKey),        // user_public_key_hex
+		params.PublicKey,                           // user_public_key_hex
 		params.StarknetDomain.Name,                 // domain_name
 		params.StarknetDomain.Version,              // domain_version
 		params.StarknetDomain.ChainID,              // domain_chain_id
