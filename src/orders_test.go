@@ -6,25 +6,25 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateSellOrderWithDefaultExpiration(t *testing.T) {
-	// Mock frozen time: "2024-01-05 01:08:57"
-	frozenTime := time.Date(2024, 1, 5, 1, 8, 57, 0, time.UTC)
+// Test constants
+const (
+	TestPrivateKeyHex = "0x7a7ff6fd3cab02ccdcd4a572563f5976f8976899b03a39773795a3c486d4986"
+	TestPublicKeyHex  = "0x61c5e7e8339b7d56f197f54ea91b776776690e3232313de0f2ecbd0ef76f466"
+	TestVaultID       = 10002
+	TestAPIKey        = "test-api-key"
+	TestNonce         = 1473459052
+)
 
-	// Mock frozen nonce
-	frozenNonce := 1473459052
+// Test helper functions
+func createTestAccount() (*StarkPerpetualAccount, error) {
+	return NewStarkPerpetualAccount(TestVaultID, TestPrivateKeyHex, TestPublicKeyHex, TestAPIKey)
+}
 
-	// Create mock trading account
-	privateKeyHex := "0x7a7ff6fd3cab02ccdcd4a572563f5976f8976899b03a39773795a3c486d4986"
-	publicKeyHex := "0x61c5e7e8339b7d56f197f54ea91b776776690e3232313de0f2ecbd0ef76f466"
-	account, err := NewStarkPerpetualAccount(10002, privateKeyHex, publicKeyHex, "test-api-key")
-	require.NoError(t, err)
-
-	// Create mock BTC-USD market
-	btcUsdMarket := MarketModel{
+func createTestBTCUSDMarket() MarketModel {
+	return MarketModel{
 		Name:                     "BTC-USD",
 		AssetName:                "BTC",
 		AssetPrecision:           8,
@@ -34,59 +34,85 @@ func TestCreateSellOrderWithDefaultExpiration(t *testing.T) {
 		L2Config: L2ConfigModel{
 			Type:                 "perpetual",
 			CollateralID:         "0x31857064564ed0ff978e687456963cba09c2c6985d8f9300a1de4962fafa054",
-			CollateralResolution: 1000000,   // 6 decimals
+			CollateralResolution: 1000000, // 6 decimals
 			SyntheticID:          "0x4254432d3600000000000000000000",
 			SyntheticResolution:  1000000, // 6 decimals
 		},
 	}
+}
 
-	// Mock Starknet domain
-	starknetDomain := StarknetDomain{
+func createTestStarknetDomain() StarknetDomain {
+	return StarknetDomain{
 		Name:     "Perpetuals",
 		Version:  "v0",
 		ChainID:  "SN_SEPOLIA",
 		Revision: "1",
 	}
+}
 
-	// Mock signer function that returns expected signature values
-	signer := account.Sign
+func createTestFrozenTime() time.Time {
+	return time.Date(2024, 1, 5, 1, 8, 57, 0, time.UTC)
+}
 
+// OrdersTestSuite defines the test suite
+type OrdersTestSuite struct {
+	suite.Suite
+	account        *StarkPerpetualAccount
+	market         MarketModel
+	starknetDomain StarknetDomain
+	frozenTime     time.Time
+	nonce          int
+}
+
+// SetupTest runs before each test
+func (suite *OrdersTestSuite) SetupTest() {
+	var err error
+	suite.account, err = createTestAccount()
+	suite.Require().NoError(err)
+
+	suite.market = createTestBTCUSDMarket()
+	suite.starknetDomain = createTestStarknetDomain()
+	suite.frozenTime = createTestFrozenTime()
+	suite.nonce = TestNonce
+}
+
+func (suite *OrdersTestSuite) TestCreateSellOrderWithDefaultExpiration() {
 	// Set expiry time (1 hour from frozen time = 1704420537000 milliseconds)
-	expiryTime := frozenTime.Add(1 * time.Hour)
+	expiryTime := suite.frozenTime.Add(1 * time.Hour)
 
 	// Create order parameters
 	params := CreateOrderObjectParams{
-		Market:                   btcUsdMarket,
-		Account:                  *account,
+		Market:                   suite.market,
+		Account:                  *suite.account,
 		SyntheticAmount:          decimal.RequireFromString("0.00100000"),
 		Price:                    decimal.RequireFromString("43445.11680000"),
 		Side:                     OrderSideSell,
-		Signer:                   signer,
-		StarknetDomain:           starknetDomain,
+		Signer:                   suite.account.Sign,
+		StarknetDomain:           suite.starknetDomain,
 		ExpireTime:               &expiryTime,
 		PostOnly:                 false,
 		PreviousOrderExternalID:  nil,
 		OrderExternalID:          nil,
 		TimeInForce:              TimeInForceGTT,
 		SelfTradeProtectionLevel: SelfTradeProtectionAccount,
-		Nonce:                    &frozenNonce,
+		Nonce:                    &suite.nonce,
 		BuilderFee:               nil,
 		BuilderID:                nil,
 	}
 
 	// Create the order
 	order, err := CreateOrderObject(params)
-	require.NoError(t, err)
-	require.NotNil(t, order)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(order)
 
 	// Convert order to JSON for comparison
 	orderJSON, err := json.Marshal(order)
-	require.NoError(t, err)
+	suite.Require().NoError(err)
 
 	// Parse JSON into a map for easier comparison
 	var actualOrder map[string]interface{}
 	err = json.Unmarshal(orderJSON, &actualOrder)
-	require.NoError(t, err)
+	suite.Require().NoError(err)
 
 	// Expected JSON structure (matching Python test output)
 	expectedOrder := map[string]interface{}{
@@ -109,7 +135,7 @@ func TestCreateSellOrderWithDefaultExpiration(t *testing.T) {
 				"r": "0x3d17d8b9652e5f60d40d079653cfa92b1065ea8cf159609a3c390070dcd44f7",
 				"s": "0x76a6deccbc84ac324f695cfbde80e0ed62443e95f5dcd8722d12650ccc122e5",
 			},
-			"starkKey":           publicKeyHex,
+			"starkKey":           TestPublicKeyHex,
 			"collateralPosition": "10002",
 		},
 		"trigger":    nil,
@@ -121,27 +147,32 @@ func TestCreateSellOrderWithDefaultExpiration(t *testing.T) {
 	}
 
 	// Assert JSON structure matches expected (excluding id since it's generated)
-	assert.Equal(t, expectedOrder["market"], actualOrder["market"])
-	assert.Equal(t, expectedOrder["type"], actualOrder["type"])
-	assert.Equal(t, expectedOrder["side"], actualOrder["side"])
-	assert.Equal(t, expectedOrder["qty"], actualOrder["qty"])
-	assert.Equal(t, expectedOrder["price"], actualOrder["price"])
-	assert.Equal(t, expectedOrder["reduceOnly"], actualOrder["reduceOnly"])
-	assert.Equal(t, expectedOrder["postOnly"], actualOrder["postOnly"])
-	assert.Equal(t, expectedOrder["timeInForce"], actualOrder["timeInForce"])
-	assert.Equal(t, expectedOrder["expiryEpochMillis"], actualOrder["expiryEpochMillis"])
-	assert.Equal(t, expectedOrder["fee"], actualOrder["fee"])
-	assert.Equal(t, expectedOrder["nonce"], actualOrder["nonce"])
-	assert.Equal(t, expectedOrder["selfTradeProtectionLevel"], actualOrder["selfTradeProtectionLevel"])
-	assert.Equal(t, expectedOrder["cancelId"], actualOrder["cancelId"])
-	assert.Equal(t, expectedOrder["settlement"], actualOrder["settlement"])
-	assert.Equal(t, expectedOrder["trigger"], actualOrder["trigger"])
-	assert.Equal(t, expectedOrder["tpSlType"], actualOrder["tpSlType"])
-	assert.Equal(t, expectedOrder["takeProfit"], actualOrder["takeProfit"])
-	assert.Equal(t, expectedOrder["stopLoss"], actualOrder["stopLoss"])
-	assert.Equal(t, expectedOrder["builderFee"], actualOrder["builderFee"])
-	assert.Equal(t, expectedOrder["builderId"], actualOrder["builderId"])
+	suite.Equal(expectedOrder["market"], actualOrder["market"])
+	suite.Equal(expectedOrder["type"], actualOrder["type"])
+	suite.Equal(expectedOrder["side"], actualOrder["side"])
+	suite.Equal(expectedOrder["qty"], actualOrder["qty"])
+	suite.Equal(expectedOrder["price"], actualOrder["price"])
+	suite.Equal(expectedOrder["reduceOnly"], actualOrder["reduceOnly"])
+	suite.Equal(expectedOrder["postOnly"], actualOrder["postOnly"])
+	suite.Equal(expectedOrder["timeInForce"], actualOrder["timeInForce"])
+	suite.Equal(expectedOrder["expiryEpochMillis"], actualOrder["expiryEpochMillis"])
+	suite.Equal(expectedOrder["fee"], actualOrder["fee"])
+	suite.Equal(expectedOrder["nonce"], actualOrder["nonce"])
+	suite.Equal(expectedOrder["selfTradeProtectionLevel"], actualOrder["selfTradeProtectionLevel"])
+	suite.Equal(expectedOrder["cancelId"], actualOrder["cancelId"])
+	suite.Equal(expectedOrder["settlement"], actualOrder["settlement"])
+	suite.Equal(expectedOrder["trigger"], actualOrder["trigger"])
+	suite.Equal(expectedOrder["tpSlType"], actualOrder["tpSlType"])
+	suite.Equal(expectedOrder["takeProfit"], actualOrder["takeProfit"])
+	suite.Equal(expectedOrder["stopLoss"], actualOrder["stopLoss"])
+	suite.Equal(expectedOrder["builderFee"], actualOrder["builderFee"])
+	suite.Equal(expectedOrder["builderId"], actualOrder["builderId"])
 
 	// Verify ID is not empty (it's generated dynamically)
-	assert.NotEmpty(t, actualOrder["id"])
+	suite.NotEmpty(actualOrder["id"])
+}
+
+// TestOrdersTestSuite runs the test suite
+func TestOrdersTestSuite(t *testing.T) {
+	suite.Run(t, new(OrdersTestSuite))
 }
