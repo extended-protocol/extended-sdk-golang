@@ -132,7 +132,7 @@ type CreateOrderObjectParams struct {
 	SyntheticAmount          decimal.Decimal
 	Price                    decimal.Decimal
 	Side                     OrderSide
-	Signer                   func(string) (*big.Int, *big.Int) // Function that takes string and returns two values
+	Signer                   func(string) (*big.Int, *big.Int, error) // Function that takes string and returns two values
 	PublicKey                int
 	StarknetDomain           StarknetDomain
 	ExpireTime               *time.Time
@@ -214,9 +214,9 @@ func CreateOrderObject(params CreateOrderObjectParams) (*PerpetualOrderModel, er
 		return nil, fmt.Errorf("hashing order failed: %w", err)
 	}
 
-	sig_r, sig_s := params.Signer(order_hash)
-	if sig_r == nil || sig_s == nil {
-		return nil, fmt.Errorf("signer function returned nil values")
+	sig_r, sig_s, err := params.Signer(order_hash)
+	if err != nil {
+		return nil, fmt.Errorf("signer function failed: %w", err)
 	}
 
 	settlement := Settlement{
