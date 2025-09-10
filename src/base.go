@@ -110,7 +110,14 @@ func (m *BaseModule) DoRequest(ctx context.Context, method, url string, body io.
 	}
 
 	// Add standard headers
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	// Only set Content-Type if we have a request body
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// Add API key authentication if available
 	if apiKey, err := m.APIKey(); err == nil {
 		req.Header.Set("X-API-Key", apiKey)
 	}

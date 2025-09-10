@@ -1,7 +1,9 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -63,8 +65,8 @@ func (c *APIClient) GetMarkets(ctx context.Context, market []string) ([]MarketMo
 
 // FeeResponse represents the API response for trading fees
 type FeeResponse struct {
-	Data    []TradingFeeModel `json:"data"`
-	Status string              `json:"status"`
+	Data   []TradingFeeModel `json:"data"`
+	Status string            `json:"status"`
 }
 
 // GetMarketFee retrieves current trading fees for a specific market
@@ -98,40 +100,47 @@ type OrderRequest struct {
 
 // OrderResponse represents the API response after order submission
 type OrderResponse struct {
-	OrderID   string `json:"orderId"`
-	Status    string `json:"status"`
-	Success   bool   `json:"success"`
-	Message   string `json:"message,omitempty"`
-	Timestamp int64  `json:"timestamp"`
+	Status string `json:"status"`
+	Data   struct {
+		OrderID    uint   `json:"id"`
+		ExternalID string `json:"externalId"`
+	}
 }
 
 // SubmitOrder submits a perpetual order to the trading API
 func (c *APIClient) SubmitOrder(ctx context.Context, order *PerpetualOrderModel) (*OrderResponse, error) {
-	// TODO: Implement logic:
-	// 1. Validate order object is complete and properly signed
-	// 2. Create OrderRequest wrapper with timestamp
-	// 3. Serialize to JSON
-	// 4. Create POST request to orders endpoint (e.g., "/v1/orders")
-	// 5. Add required headers:
-	//    - Authorization: Bearer {apiKey} or X-API-Key: {apiKey}
-	//    - Content-Type: application/json
-	//    - X-Stark-Key: {starkAccount.PublicKey()} (if required)
-	// 6. Execute request with context
-	// 7. Parse response and handle various HTTP status codes:
-	//    - 200/201: Success
-	//    - 400: Bad request (validation errors)
-	//    - 401: Unauthorized (API key issues)
-	//    - 429: Rate limited
-	//    - 500: Server errors
-	// 8. Return structured response or appropriate error
-	return nil, fmt.Errorf("not implemented")
-}
+	// Validate order object is complete and properly signed
+	if order == nil {
+		return nil, fmt.Errorf("order is nil")
+	}
 
-// GetOrderStatus retrieves the current status of an order
-func (c *APIClient) GetOrderStatus(ctx context.Context, orderID string) (*OrderResponse, error) {
-	// TODO: Implement logic:
-	// 1. Build URL with order ID (e.g., "/v1/orders/{orderID}")
-	// 2. Create GET request with authentication
-	// 3. Parse response to get current order state
-	return nil, fmt.Errorf("not implemented")
+	baseUrl, err := c.GetURL("/user/order", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build URL: %w", err)
+	}
+
+	// Marshal the order to JSON
+	orderJSON, err := json.Marshal(order)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal order to JSON: %w", err)
+	}
+
+	// Create a buffer with the JSON data
+	jsonData := bytes.NewBuffer(orderJSON)
+
+	// Use the new DoRequest method to handle the HTTP request and JSON parsing
+	var orderResponse OrderResponse
+	if err := c.BaseModule.DoRequest(ctx, "POST", baseUrl, jsonData, &orderResponse); err != nil {
+		return nil, err
+	}
+
+	if orderResponse.Status != "OK" {
+		return nil, fmt.Errorf("API returned error status: %v", orderResponse.Status)
+	}
+
+	if orderResponse.Data.ExternalID != order.ID {
+		return nil, fmt.Errorf("mismatched order ID in response: got %s, expected %s", orderResponse.Data.ExternalID, order.ID)
+	}
+
+	return &orderResponse, nil
 }
