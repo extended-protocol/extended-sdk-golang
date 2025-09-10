@@ -3,10 +3,10 @@ package sdk
 import "github.com/shopspring/decimal"
 
 type StarknetDomain struct {
-	Name     string
-	Version  string
-	ChainID  string
-	Revision string
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	ChainID  string `json:"chainId"`
+	Revision string `json:"revision"`
 }
 
 // TradingFeeModel represents trading fees for a market
