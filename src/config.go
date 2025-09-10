@@ -3,18 +3,18 @@ package sdk
 import "github.com/shopspring/decimal"
 
 type StarknetDomain struct {
-	Name     string `json:"name"`
-	Version  string `json:"version"`
-	ChainID  string `json:"chain_id"`
-	Revision string `json:"revision"`
+	Name     string
+	Version  string
+	ChainID  string
+	Revision string
 }
 
 // TradingFeeModel represents trading fees for a market
 type TradingFeeModel struct {
 	Market         string          `json:"market"`
-	MakerFeeRate   decimal.Decimal `json:"maker_fee_rate"`
-	TakerFeeRate   decimal.Decimal `json:"taker_fee_rate"`
-	BuilderFeeRate decimal.Decimal `json:"builder_fee_rate"`
+	MakerFeeRate   decimal.Decimal `json:"makerFeeRate"`
+	TakerFeeRate   decimal.Decimal `json:"takerFeeRate"`
+	BuilderFeeRate decimal.Decimal `json:"builderFeeRate"`
 }
 
 var DefaultFees = TradingFeeModel{
