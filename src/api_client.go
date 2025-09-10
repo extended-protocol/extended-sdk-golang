@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -46,46 +45,14 @@ func (c *APIClient) GetMarkets(ctx context.Context, market []string) ([]MarketMo
 	if len(market) > 0 {
 		baseURL += "?market=" + market[0]
 		for i := 1; i < len(market); i++ {
-			// Multiple markets are simply separated with &, not &market=
 			baseURL += "&market=" + market[i]
 		}
 	}
 
-	// Create GET request
-	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Add headers
-	req.Header.Set("Content-Type", "application/json")
-	if apiKey, err := c.BaseModule.APIKey(); err == nil {
-		req.Header.Set("X-API-Key", apiKey)
-	}
-
-	// Execute request
-	client := c.BaseModule.HTTPClient()
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Check for HTTP errors
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	// Parse JSON response
+	// Use the new DoRequest method to handle the HTTP request and JSON parsing
 	var marketResponse MarketResponse
-	if err := json.Unmarshal(body, &marketResponse); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
+	if err := c.BaseModule.DoRequest(ctx, "GET", baseURL, nil, &marketResponse); err != nil {
+		return nil, err
 	}
 
 	// Check API status
@@ -94,16 +61,6 @@ func (c *APIClient) GetMarkets(ctx context.Context, market []string) ([]MarketMo
 	}
 
 	return marketResponse.Data, nil
-}
-
-// GetMarket retrieves a specific market by name
-// Justification: Often need specific market data for order operations
-func (c *APIClient) GetMarket(ctx context.Context, marketName string) (*MarketModel, error) {
-	// TODO: Implement logic:
-	// 1. Build URL with market name parameter (e.g., "/v1/markets/{marketName}")
-	// 2. Similar to GetMarkets but for single market
-	// 3. Return pointer to allow nil for not-found cases
-	return nil, fmt.Errorf("not implemented")
 }
 
 // ===== Fee Data Operations =====
@@ -116,15 +73,21 @@ type FeeResponse struct {
 	Message string            `json:"message,omitempty"`
 }
 
-// GetTradingFees retrieves current trading fees for all markets
+// GetTradingFee retrieves current trading fees for a specific market
 // Justification: Fee information is required for accurate order cost calculation
-func (c *APIClient) GetTradingFees(ctx context.Context) ([]TradingFeeModel, error) {
-	// TODO: Implement logic:
-	// 1. Build URL for fees endpoint (e.g., "/v1/fees")
-	// 2. Create GET request with authentication
-	// 3. Parse response similar to markets
-	// 4. Return fee models for use in order calculations
-	return nil, fmt.Errorf("not implemented")
+func (c *APIClient) GetTradingFee(ctx context.Context, market string) ([]TradingFeeModel, error) {
+	baseUrl, err := c.GetURL("/user/fees", map[string]string{"market": market})
+	if err != nil {
+		return nil, fmt.Errorf("failed to build URL: %w", err)
+	}
+
+	// Use the new DoRequest method to handle the HTTP request and JSON parsing
+	var feeResponse FeeResponse
+	if err := c.BaseModule.DoRequest(ctx, "GET", baseUrl, nil, &feeResponse); err != nil {
+		return nil, err
+	}
+
+	return feeResponse.Fees, nil
 }
 
 // GetMarketFees retrieves trading fees for a specific market

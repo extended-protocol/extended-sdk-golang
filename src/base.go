@@ -1,8 +1,11 @@
 package sdk
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -95,6 +98,48 @@ func (m *BaseModule) GetURL(path string, query map[string]string) (string, error
 		u.RawQuery = q.Encode()
 	}
 	return u.String(), nil
+}
+
+// DoRequest performs an HTTP request and unmarshals the JSON response into the provided object
+// This function deduplicates common HTTP request logic across the SDK
+func (m *BaseModule) DoRequest(ctx context.Context, method, url string, body io.Reader, result interface{}) error {
+	// Create HTTP request
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add standard headers
+	req.Header.Set("Content-Type", "application/json")
+	if apiKey, err := m.APIKey(); err == nil {
+		req.Header.Set("X-API-Key", apiKey)
+	}
+
+	// Execute request
+	client := m.HTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(responseBody))
+	}
+
+	// Parse JSON response into the provided result object
+	if err := json.Unmarshal(responseBody, result); err != nil {
+		return fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return nil
 }
 
 type StarkPerpetualAccount struct {
