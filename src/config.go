@@ -11,7 +11,7 @@ type StarknetDomain struct {
 
 // TradingFeeModel represents trading fees for a market
 type TradingFeeModel struct {
-	Market         string `json:"market"`
+	Market         string          `json:"market"`
 	MakerFeeRate   decimal.Decimal `json:"makerFeeRate"`
 	TakerFeeRate   decimal.Decimal `json:"takerFeeRate"`
 	BuilderFeeRate decimal.Decimal `json:"builderFeeRate"`
