@@ -3,8 +3,6 @@ package sdk
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
 )
 
@@ -15,7 +13,6 @@ type APIClient struct {
 }
 
 // NewAPIClient creates a new API client instance
-// Justification: Constructor pattern ensures proper initialization and validation
 func NewAPIClient(
 	cfg EndpointConfig,
 	apiKey string,
@@ -31,7 +28,6 @@ func NewAPIClient(
 // ===== Market Data Operations =====
 
 // MarketResponse represents the API response for market data
-// Justification: Separate response struct allows for API metadata (pagination, status, etc.)
 type MarketResponse struct {
 	Data   []MarketModel `json:"data"`
 	Status string        `json:"status"`
@@ -66,16 +62,13 @@ func (c *APIClient) GetMarkets(ctx context.Context, market []string) ([]MarketMo
 // ===== Fee Data Operations =====
 
 // FeeResponse represents the API response for trading fees
-// Justification: Fees can change dynamically and must be fetched fresh
 type FeeResponse struct {
-	Fees    []TradingFeeModel `json:"fees"`
-	Success bool              `json:"success"`
-	Message string            `json:"message,omitempty"`
+	Data    []TradingFeeModel `json:"data"`
+	Status string              `json:"status"`
 }
 
-// GetTradingFee retrieves current trading fees for a specific market
-// Justification: Fee information is required for accurate order cost calculation
-func (c *APIClient) GetTradingFee(ctx context.Context, market string) ([]TradingFeeModel, error) {
+// GetMarketFee retrieves current trading fees for a specific market
+func (c *APIClient) GetMarketFee(ctx context.Context, market string) ([]TradingFeeModel, error) {
 	baseUrl, err := c.GetURL("/user/fees", map[string]string{"market": market})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build URL: %w", err)
@@ -87,22 +80,16 @@ func (c *APIClient) GetTradingFee(ctx context.Context, market string) ([]Trading
 		return nil, err
 	}
 
-	return feeResponse.Fees, nil
-}
+	if feeResponse.Status != "OK" {
+		return nil, fmt.Errorf("API returned error status: %v", feeResponse.Status)
+	}
 
-// GetMarketFees retrieves trading fees for a specific market
-// Justification: More efficient when only need fees for one market
-func (c *APIClient) GetMarketFees(ctx context.Context, marketName string) (*TradingFeeModel, error) {
-	// TODO: Implement logic:
-	// 1. Build URL with market parameter (e.g., "/v1/fees/{marketName}")
-	// 2. Similar to GetTradingFees but for single market
-	return nil, fmt.Errorf("not implemented")
+	return feeResponse.Data, nil
 }
 
 // ===== Order Operations =====
 
 // OrderRequest represents the complete order submission request
-// Justification: Wraps the order model with any additional API-specific fields
 type OrderRequest struct {
 	Order     PerpetualOrderModel `json:"order"`
 	Signature string              `json:"signature,omitempty"` // Additional API-level signature if needed
@@ -110,7 +97,6 @@ type OrderRequest struct {
 }
 
 // OrderResponse represents the API response after order submission
-// Justification: API responses typically include status, order ID, and error details
 type OrderResponse struct {
 	OrderID   string `json:"orderId"`
 	Status    string `json:"status"`
@@ -120,7 +106,6 @@ type OrderResponse struct {
 }
 
 // SubmitOrder submits a perpetual order to the trading API
-// Justification: Core trading functionality - converts order object to API call
 func (c *APIClient) SubmitOrder(ctx context.Context, order *PerpetualOrderModel) (*OrderResponse, error) {
 	// TODO: Implement logic:
 	// 1. Validate order object is complete and properly signed
@@ -142,77 +127,11 @@ func (c *APIClient) SubmitOrder(ctx context.Context, order *PerpetualOrderModel)
 	return nil, fmt.Errorf("not implemented")
 }
 
-// CancelOrder cancels an existing order by ID
-// Justification: Essential trading functionality for order management
-func (c *APIClient) CancelOrder(ctx context.Context, orderID string) (*OrderResponse, error) {
-	// TODO: Implement logic:
-	// 1. Build URL with order ID (e.g., "/v1/orders/{orderID}")
-	// 2. Create DELETE request with authentication
-	// 3. Handle response similar to SubmitOrder
-	return nil, fmt.Errorf("not implemented")
-}
-
 // GetOrderStatus retrieves the current status of an order
-// Justification: Needed to track order lifecycle and execution
 func (c *APIClient) GetOrderStatus(ctx context.Context, orderID string) (*OrderResponse, error) {
 	// TODO: Implement logic:
 	// 1. Build URL with order ID (e.g., "/v1/orders/{orderID}")
 	// 2. Create GET request with authentication
 	// 3. Parse response to get current order state
 	return nil, fmt.Errorf("not implemented")
-}
-
-// ===== Helper Methods =====
-
-// buildAuthenticatedRequest creates an HTTP request with proper authentication
-// Justification: Centralized auth logic to ensure consistency across all API calls
-func (c *APIClient) buildAuthenticatedRequest(ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
-	// TODO: Implement logic:
-	// 1. Create HTTP request with context
-	// 2. Add standard headers:
-	//    - User-Agent
-	//    - Content-Type (if body present)
-	//    - API key authentication
-	// 3. Add Stark account signature headers if required by API
-	// 4. Return configured request
-	return nil, fmt.Errorf("not implemented")
-}
-
-// executeRequest executes an HTTP request and returns the response body
-// Justification: Centralized request execution with error handling and response processing
-func (c *APIClient) executeRequest(req *http.Request) ([]byte, error) {
-	// TODO: Implement logic:
-	// 1. Execute request using HTTP client
-	// 2. Check response status code
-	// 3. Read response body
-	// 4. Handle common HTTP errors:
-	//    - Network errors
-	//    - Timeout errors
-	//    - HTTP status errors
-	// 5. Return body bytes or appropriate error
-	return nil, fmt.Errorf("not implemented")
-}
-
-// parseAPIError attempts to parse API error responses into Go errors
-// Justification: API errors often have structured format that should be preserved
-func (c *APIClient) parseAPIError(statusCode int, body []byte) error {
-	// TODO: Implement logic:
-	// 1. Try to parse body as JSON error response
-	// 2. Extract error message and code
-	// 3. Return structured error with context
-	// 4. Fall back to generic HTTP error if parsing fails
-	return fmt.Errorf("API error: %d", statusCode)
-}
-
-// ===== Configuration and Validation =====
-
-// ValidateConnection tests the API connection and authentication
-// Justification: Useful for setup validation and health checks
-func (c *APIClient) ValidateConnection(ctx context.Context) error {
-	// TODO: Implement logic:
-	// 1. Make simple authenticated request (e.g., GET /v1/health)
-	// 2. Verify API key works
-	// 3. Verify Stark account is properly configured
-	// 4. Return error if any validation fails
-	return fmt.Errorf("not implemented")
 }

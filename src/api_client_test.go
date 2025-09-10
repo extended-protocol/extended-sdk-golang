@@ -75,3 +75,61 @@ func TestAPIClient_GetMarkets_NetworkError(t *testing.T) {
 	require.Error(t, err, "Should error when network request fails")
 	t.Logf("Got expected network error: %v", err)
 }
+
+func TestAPIClient_GetMarketFee_ValidMarket(t *testing.T) {
+	client := createTestClient()
+	ctx := context.Background()
+
+	fees, err := client.GetMarketFee(ctx, "BTC-USD")
+
+	require.NoError(t, err, "Should not error when requesting fees for BTC-USD market")
+	require.Equal(t, len(fees), 1, "Should return one fee entry for valid market")
+	t.Logf("Got %d fees for BTC-USD", len(fees))
+
+	for _, fee := range fees {
+		t.Logf("Fee: %+v", fee)
+	}
+}
+
+func TestAPIClient_GetMarketFee_InvalidMarket(t *testing.T) {
+	client := createTestClient()
+	ctx := context.Background()
+
+	fees, err := client.GetMarketFee(ctx, "INVALID-MARKET-NAME")
+
+	if err != nil {
+		t.Logf("Got error for invalid market (this might be expected): %v", err)
+		return
+	}
+
+	// If no error, should return empty list or no matching fees
+	assert.Error(t, err, "Should error when requesting fees for invalid market")
+	assert.Equal(t, len(fees), 0, "Should return zero fees for invalid market")
+}
+
+func TestAPIClient_GetMarketFee_ContextTimeout(t *testing.T) {
+	client := createTestClient()
+
+	// Create context with very short timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
+
+	_, err := client.GetMarketFee(ctx, "BTC-USD")
+
+	require.Error(t, err, "Should error when context times out")
+	t.Logf("Got expected timeout error: %v", err)
+}
+
+func TestAPIClient_GetMarketFee_NetworkError(t *testing.T) {
+	// Create client with invalid URL
+	cfg := EndpointConfig{
+		APIBaseURL: "http://invalid-url-that-does-not-exist.com",
+	}
+	client := NewAPIClient(cfg, "", nil, 5*time.Second)
+	ctx := context.Background()
+
+	_, err := client.GetMarketFee(ctx, "BTC-USD")
+
+	require.Error(t, err, "Should error when network request fails")
+	t.Logf("Got expected network error: %v", err)
+}
