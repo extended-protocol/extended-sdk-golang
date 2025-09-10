@@ -2,18 +2,51 @@ package sdk
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func init() { load() }
+
+func load() {
+	wd, _ := os.Getwd()
+	for {
+		p := filepath.Join(wd, ".env")
+		if _, err := os.Stat(p); err == nil {
+			_ = godotenv.Load(p)
+			return
+		}
+		parent := filepath.Dir(wd)
+		if parent == wd {
+			return
+		}
+		wd = parent
+	}
+}
 func createTestClient() *APIClient {
 	cfg := EndpointConfig{
 		APIBaseURL: "https://api.starknet.sepolia.extended.exchange/api/v1",
 	}
-	return NewAPIClient(cfg, "", nil, 30*time.Second)
+
+	apiKey := os.Getenv("TEST_API_KEY")
+	vaultStr := os.Getenv("TEST_VAULT")
+	vault, _ := strconv.ParseUint(vaultStr, 10, 64)
+	publicKey := os.Getenv("TEST_PUBLIC_KEY")
+	privateKey := os.Getenv("TEST_PRIVATE_KEY")
+	account, err := NewStarkPerpetualAccount(vault, apiKey, publicKey, privateKey)
+
+	if err != nil {
+		panic("Failed to create StarkPerpetualAccount: " + err.Error())
+	}
+
+	return NewAPIClient(cfg, apiKey, account, 30*time.Second)
 }
 
 func TestAPIClient_GetMarkets_SingleValidMarket(t *testing.T) {
