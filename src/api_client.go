@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,22 +34,65 @@ func NewAPIClient(
 // MarketResponse represents the API response for market data
 // Justification: Separate response struct allows for API metadata (pagination, status, etc.)
 type MarketResponse struct {
-	Markets []MarketModel `json:"markets"`
-	Success bool          `json:"success"`
-	Message string        `json:"message,omitempty"`
+	Data   []MarketModel `json:"data"`
+	Status string        `json:"status"`
 }
 
 // GetMarkets retrieves all available markets from the API
-// Justification: Markets are fundamental data needed before any trading operations
-func (c *APIClient) GetMarkets(ctx context.Context) ([]MarketModel, error) {
-	// TODO: Implement logic:
-	// 1. Build URL for markets endpoint (e.g., "/v1/markets")
-	// 2. Create GET request with proper headers (API key, content-type)
-	// 3. Execute request with context for timeout/cancellation
-	// 4. Parse JSON response into MarketResponse struct
-	// 5. Handle API errors and return appropriate Go errors
-	// 6. Extract and return markets slice
-	return nil, fmt.Errorf("not implemented")
+func (c *APIClient) GetMarkets(ctx context.Context, market []string) ([]MarketModel, error) {
+	// Build the URL manually to handle multiple market parameters correctly
+	baseURL := c.BaseModule.EndpointConfig().APIBaseURL + "/api/v1/info/markets"
+
+	if len(market) > 0 {
+		baseURL += "?market=" + market[0]
+		for i := 1; i < len(market); i++ {
+			baseURL += "&" + market[i]
+		}
+	}
+
+	// Create GET request
+	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add headers
+	req.Header.Set("Content-Type", "application/json")
+	if apiKey, err := c.BaseModule.APIKey(); err == nil {
+		req.Header.Set("X-API-Key", apiKey)
+	}
+
+	// Execute request
+	client := c.BaseModule.HTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse JSON response
+	var marketResponse MarketResponse
+	if err := json.Unmarshal(body, &marketResponse); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	// Check API status
+	if marketResponse.Status != "ok" {
+		return nil, fmt.Errorf("API returned error status: %s", marketResponse.Status)
+	}
+
+	return marketResponse.Data, nil
 }
 
 // GetMarket retrieves a specific market by name
