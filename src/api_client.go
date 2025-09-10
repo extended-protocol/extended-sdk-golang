@@ -41,12 +41,13 @@ type MarketResponse struct {
 // GetMarkets retrieves all available markets from the API
 func (c *APIClient) GetMarkets(ctx context.Context, market []string) ([]MarketModel, error) {
 	// Build the URL manually to handle multiple market parameters correctly
-	baseURL := c.BaseModule.EndpointConfig().APIBaseURL + "/api/v1/info/markets"
+	baseURL := c.BaseModule.EndpointConfig().APIBaseURL + "/info/markets"
 
 	if len(market) > 0 {
 		baseURL += "?market=" + market[0]
 		for i := 1; i < len(market); i++ {
-			baseURL += "&" + market[i]
+			// Multiple markets are simply separated with &, not &market=
+			baseURL += "&market=" + market[i]
 		}
 	}
 
@@ -88,7 +89,7 @@ func (c *APIClient) GetMarkets(ctx context.Context, market []string) ([]MarketMo
 	}
 
 	// Check API status
-	if marketResponse.Status != "ok" {
+	if marketResponse.Status != "OK" {
 		return nil, fmt.Errorf("API returned error status: %s", marketResponse.Status)
 	}
 
