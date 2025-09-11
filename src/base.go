@@ -109,9 +109,6 @@ func (m *BaseModule) DoRequest(ctx context.Context, method, url string, body io.
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add standard headers
-	req.Header.Set("Accept", "application/json")
-
 	// Only set Content-Type if we have a request body
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")

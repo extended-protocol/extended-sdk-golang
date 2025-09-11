@@ -115,8 +115,8 @@ func (suite *OrdersTestSuite) TestCreateSellOrderWithDefaultExpiration() {
 	expectedOrder := map[string]interface{}{
 		"id":                       "529621978301228831750156704671293558063128025271079340676658105549022202327",
 		"market":                   "BTC-USD",
-		"type":                     "limit",
-		"side":                     "sell",
+		"type":                     "LIMIT",
+		"side":                     "SELL",
 		"qty":                      "0.001",
 		"price":                    "43445.1168",
 		"reduceOnly":               false,
@@ -200,8 +200,8 @@ func (suite *OrdersTestSuite) TestCreateSellOrder() {
 	expectedOrder := map[string]interface{}{
 		"id":                       "529621978301228831750156704671293558063128025271079340676658105549022202327",
 		"market":                   "BTC-USD",
-		"type":                     "limit",
-		"side":                     "sell",
+		"type":                     "LIMIT",
+		"side":                     "SELL",
 		"qty":                      "0.001",
 		"price":                    "43445.1168",
 		"reduceOnly":               false,
@@ -296,8 +296,8 @@ func (suite *OrdersTestSuite) TestCreateBuyOrderWithClientProtection() {
 	// Expected JSON structure for buy order
 	expectedOrder := map[string]interface{}{
 		"market":                   "BTC-USD",
-		"type":                     "limit",
-		"side":                     "buy",
+		"type":                     "LIMIT",
+		"side":                     "BUY",
 		"qty":                      "0.001",
 		"price":                    "43445.1168",
 		"reduceOnly":               false,

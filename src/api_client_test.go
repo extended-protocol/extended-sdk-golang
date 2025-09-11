@@ -191,7 +191,7 @@ func TestAPIClient_SubmitOrder_ValidOrder(t *testing.T) {
 		Market:                   market,
 		Account:                  *account,
 		SyntheticAmount:          decimal.NewFromFloat(0.001), // Small BTC amount
-		Price:                    decimal.NewFromFloat(50000), // $50k per BTC
+		Price:                    decimal.NewFromFloat(1), // Place a low price so that it doesn't match
 		Side:                     OrderSideBuy,
 		Signer:                   account.Sign,
 		StarknetDomain: StarknetDomain{
