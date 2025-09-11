@@ -11,17 +11,17 @@ import (
 type OrderType string
 
 const (
-	OrderTypeLimit       OrderType = "limit"
-	OrderTypeMarket      OrderType = "market"
-	OrderTypeConditional OrderType = "conditional"
-	OrderTypeTpsl        OrderType = "tpsl"
+	OrderTypeLimit       OrderType = "LIMIT"
+	OrderTypeMarket      OrderType = "MARKET"
+	OrderTypeConditional OrderType = "CONDITIONAL"
+	OrderTypeTpsl        OrderType = "TPSL"
 )
 
 type OrderSide string
 
 const (
-	OrderSideBuy  OrderSide = "buy"
-	OrderSideSell OrderSide = "sell"
+	OrderSideBuy  OrderSide = "BUY"
+	OrderSideSell OrderSide = "SELL"
 )
 
 // TimeInForce represents the time-in-force setting
@@ -44,33 +44,33 @@ const (
 type TriggerPriceType string
 
 const (
-	TriggerPriceTypeLast  TriggerPriceType = "last"
-	TriggerPriceTypeMid   TriggerPriceType = "mid"
-	TriggerPriceTypeMark  TriggerPriceType = "mark"
-	TriggerPriceTypeIndex TriggerPriceType = "index"
+	TriggerPriceTypeLast  TriggerPriceType = "LAST"
+	TriggerPriceTypeMid   TriggerPriceType = "MID"
+	TriggerPriceTypeMark  TriggerPriceType = "MARK"
+	TriggerPriceTypeIndex TriggerPriceType = "INDEX"
 )
 
 type TriggerDirection string
 
 const (
-	TriggerDirectionUp   TriggerDirection = "up"
-	TriggerDirectionDown TriggerDirection = "down"
+	TriggerDirectionUp   TriggerDirection = "UP"
+	TriggerDirectionDown TriggerDirection = "DOWN"
 )
 
 // ExecutionPriceType represents the type of price used for order execution
 type ExecutionPriceType string
 
 const (
-	ExecutionPriceTypeLimit  ExecutionPriceType = "limit"
-	ExecutionPriceTypeMarket ExecutionPriceType = "market"
+	ExecutionPriceTypeLimit  ExecutionPriceType = "LIMIT"
+	ExecutionPriceTypeMarket ExecutionPriceType = "MARKET"
 )
 
 // TpSlType represents the TPSL type determining order size
 type TpSlType string
 
 const (
-	TpSlTypeOrder    TpSlType = "order"
-	TpSlTypePosition TpSlType = "position"
+	TpSlTypeOrder    TpSlType = "ORDER"
+	TpSlTypePosition TpSlType = "POSITION"
 )
 
 // Signature represents a cryptographic signature
