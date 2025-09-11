@@ -176,24 +176,24 @@ func TestAPIClient_SubmitOrder_ValidOrder(t *testing.T) {
 	markets, err := client.GetMarkets(ctx, []string{"BTC-USD"})
 	require.NoError(t, err, "Should be able to get BTC-USD market")
 	require.Greater(t, len(markets), 0, "Should have at least one market")
-	
+
 	market := markets[0]
-	
+
 	// Get account from client
 	account, err := client.StarkAccount()
 	require.NoError(t, err, "Should be able to get account")
-	
+
 	// Create order parameters
 	nonce := int(time.Now().Unix()) // Use timestamp as nonce for uniqueness
 	expireTime := time.Now().Add(1 * time.Hour)
-	
+
 	params := CreateOrderObjectParams{
-		Market:                   market,
-		Account:                  *account,
-		SyntheticAmount:          decimal.NewFromFloat(0.001), // Small BTC amount
-		Price:                    decimal.NewFromFloat(1), // Place a low price so that it doesn't match
-		Side:                     OrderSideBuy,
-		Signer:                   account.Sign,
+		Market:          market,
+		Account:         *account,
+		SyntheticAmount: decimal.NewFromFloat(0.001), // Small BTC amount
+		Price:           decimal.NewFromFloat(1),     // Place a low price so that it doesn't match
+		Side:            OrderSideBuy,
+		Signer:          account.Sign,
 		StarknetDomain: StarknetDomain{
 			Name:     "Perpetuals",
 			Version:  "v0",
@@ -206,19 +206,19 @@ func TestAPIClient_SubmitOrder_ValidOrder(t *testing.T) {
 		SelfTradeProtectionLevel: SelfTradeProtectionDisabled,
 		Nonce:                    &nonce,
 	}
-	
+
 	// Create the order object
 	order, err := CreateOrderObject(params)
 	require.NoError(t, err, "Should be able to create valid order")
 	require.NotNil(t, order, "Order should not be nil")
-	
+
 	// Submit the order
 	response, err := client.SubmitOrder(ctx, order)
-	
+
 	require.NoError(t, err, "Should not error when submitting valid order")
-	
+
 	require.NotNil(t, response, "Response should not be nil")
 	require.Equal(t, "OK", response.Status, "Response status should be OK")
-	
+
 	t.Logf("Successfully submitted order with ID: %s", response.Data.ExternalID)
 }
