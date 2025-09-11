@@ -161,6 +161,20 @@ func NewStarkPerpetualAccount(vault uint64, privateKeyHex, publicKeyHex, apiKey 
 	if err := isHexString(publicKeyHex); err != nil {
 		return nil, fmt.Errorf("invalid public key: %w", err)
 	}
+
+	// Ensure that private key and public key have 0x prefix
+	if len(privateKeyHex) < 2 || privateKeyHex[:2] != "0x" {
+		return nil, fmt.Errorf("private key must start with 0x")
+	}
+	if len(publicKeyHex) < 2 || publicKeyHex[:2] != "0x" {
+		return nil, fmt.Errorf("public key must start with 0x")
+	}
+
+	// Check that API key does not start with 0x
+	if len(apiKey) >= 2 && apiKey[:2] == "0x" {
+		return nil, fmt.Errorf("api key should not start with 0x")
+	}
+
 	return &StarkPerpetualAccount{
 		vault:      vault,
 		privateKey: privateKeyHex,

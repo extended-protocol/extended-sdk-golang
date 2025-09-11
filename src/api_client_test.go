@@ -41,7 +41,7 @@ func createTestClient() *APIClient {
 	vault, _ := strconv.ParseUint(vaultStr, 10, 64)
 	publicKey := os.Getenv("TEST_PUBLIC_KEY")
 	privateKey := os.Getenv("TEST_PRIVATE_KEY")
-	account, err := NewStarkPerpetualAccount(vault, apiKey, publicKey, privateKey)
+	account, err := NewStarkPerpetualAccount(vault, privateKey, publicKey, apiKey)
 
 	if err != nil {
 		panic("Failed to create StarkPerpetualAccount: " + err.Error())
