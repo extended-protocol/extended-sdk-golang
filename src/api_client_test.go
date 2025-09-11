@@ -131,11 +131,6 @@ func TestAPIClient_GetMarketFee_InvalidMarket(t *testing.T) {
 
 	fees, err := client.GetMarketFee(ctx, "INVALID-MARKET-NAME")
 
-	if err != nil {
-		t.Logf("Got error for invalid market (this might be expected): %v", err)
-		return
-	}
-
 	// If no error, should return empty list or no matching fees
 	assert.Error(t, err, "Should error when requesting fees for invalid market")
 	assert.Equal(t, len(fees), 0, "Should return zero fees for invalid market")
