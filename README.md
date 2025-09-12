@@ -2,13 +2,7 @@
 
 ## Introduction
 
-This is a simple golang interface around the extended exchange rust sdk [here](https://github.com/x10xchange/rust-crypto-lib-base). The SDK provides Go bindings for cryptographic operations including order hash generation and message signing for the extended exchange protocol.
-
-## Features
-
-- **Order Hash Generation**: Compute order hashes for trading operations
-- **Message Signing**: Sign messages using private keys with ECDSA
-- **Cross-platform**: Built with CGO bindings to Rust library
+This is a simple golang interface around the extended exchange rust sdk [here](https://github.com/x10xchange/rust-crypto-lib-base). The SDK provides basic Account creation, Order submission and Market/FeeData fetching.
 
 ## Prerequisites
 
@@ -17,14 +11,21 @@ This is a simple golang interface around the extended exchange rust sdk [here](h
 - GCC or compatible C compiler
 - Git
 
+Note: Currently, the SDK is only compatible for use in linux-based x86_64 machines (including WSL)
+
 ## Project Structure
 
 ```
-golang-ex10-sdk/
+extended-sdk-golang/
 ├── README.md           # This file
 └── src/
-    ├── sdk.go             # Main SDK implementation with CGO bindings
-    └── sdk_test.go        # Unit tests
+    ├── api_client.go      # REST API client for trading operations
+    ├── base.go            # Base module with common HTTP functionality
+    ├── config.go          # Configuration and domain models
+    ├── markets.go         # Market data models
+    ├── orders.go          # Order creation and management
+    ├── sign.go            # Cryptographic signing with CGO bindings
+    └── utils.go           # Utility functions
 └── rust-lib/          # Rust library source code
     └── target/
         └── release/   # Built Rust library (.so file)
@@ -48,20 +49,32 @@ Alternatively, run `build-lib.sh` in the root directory.
 
 ## Running Tests
 
-After building the Rust library, you must ensure to allow the go compiler to find the library by setting the library environment variable
+After building the Rust library, you must ensure to allow the go compiler to find the library by setting the library environment variable. Additionally, certain tests require testnet API keys and a private/public keypair.
+
 ```bash
 export LD_LIBRARY_PATH="$(pwd):${LD_LIBRARY_PATH:-}"
+export TEST_API_KEY=<your_api_key>
+export TEST_PRIVATE_KEY=<your_private_key_hex>
+export TEST_PUBLIC_KEY=<your_public_key_hex>
+export TEST_VAULT=<your_vault_id>
 ```
 
-```bash
-# Run all tests
-go test
+Then you can run tests from the `src/` directory:
 
-# Run tests with verbose output
+```bash
+# Navigate to src directory
+cd src
+
+# Run all tests
 go test -v
 
-# Run specific test
-go test -run TestGoGetOrderHash
+# Run specific test patterns
+go test -run TestCreateOrderObject -v
+go test -run TestGetOrderHash -v
+go test -run TestSignMessage -v
+
+# Run tests with race detection
+go test -race -v
 ```
 
 ## Usage Example
@@ -70,39 +83,102 @@ go test -run TestGoGetOrderHash
 package main
 
 import (
+    "context"
     "fmt"
     "log"
+    "time"
     
-    "github.com/extended-protocol/extended-sdk-golang"
+    "github.com/shopspring/decimal"
+    sdk "github.com/extended-protocol/extended-sdk-golang/src"
 )
 
 func main() {
-    // Generate order hash
-    hash, err := sdk.GetOrderHash(
-        "100", "0x2", "100",
-        "0x1", "-156",
-        "0x1", "74",
-        "100", "123",
-        "0x5d05989e9302dcebc74e241001e3e3ac3f4402ccf2f8e6f74b034b07ad6a904",
-        "Perpetuals", "v0", "SN_SEPOLIA", "1",
+    // Create API client
+    cfg := sdk.EndpointConfig{
+        APIBaseURL: "https://api.starknet.sepolia.extended.exchange/api/v1",
+    }
+    
+    // Initialize Stark account (example values - use your own)
+    account, err := sdk.NewStarkPerpetualAccount(
+        123,                                                           // vault
+        "0x1234567890123456789012345678901234567890123456789012345678901234", // private key
+        "0x0987654321098765432109876543210987654321098765432109876543210987", // public key
+        "your-api-key-here",                                          // API key
     )
     if err != nil {
-        log.Fatal(err)
+        log.Fatal("Failed to create account:", err)
     }
-    fmt.Println("Order hash:", hash)
     
-    // Sign a message
-    sig, err := sdk.SignMessage(hash, "0x1234def56789012345678901234567890123456789012345678901234567890")
-	if err != nil {
-		log.Fatal("SignMessage failed: %v", err)
-	}
-    fmt.Println("Signature:", signature)
+    client := sdk.NewAPIClient(cfg, account.APIKey(), account, 30*time.Second)
+    defer client.Close()
+    
+    ctx := context.Background()
+    
+    // Get available markets
+    markets, err := client.GetMarkets(ctx, []string{"BTC-USD"})
+    if err != nil {
+        log.Fatal("Failed to get markets:", err)
+    }
+    fmt.Printf("Available markets: %+v\n", markets)
+    
+    // Create an order
+    if len(markets) > 0 {
+        market := markets[0]
+        
+        // Setup Starknet domain (example for testnet)
+        domain := sdk.StarknetDomain{
+            Name:     "Perpetuals",
+            Version:  "v0",
+            ChainID:  "SN_SEPOLIA",
+            Revision: "1",
+        }
+        
+        // Order parameters
+        nonce := 12345
+        orderParams := sdk.CreateOrderObjectParams{
+            Market:                   market,
+            Account:                  *account,
+            SyntheticAmount:          decimal.NewFromFloat(0.1),  // 0.1 BTC
+            Price:                    decimal.NewFromFloat(50000), // $50,000
+            Side:                     sdk.OrderSideBuy,
+            Signer:                   account.Sign,
+            StarknetDomain:          domain,
+            PostOnly:                false,
+            TimeInForce:             sdk.TimeInForceGTT,
+            SelfTradeProtectionLevel: sdk.SelfTradeProtectionDisabled,
+            Nonce:                   &nonce,
+        }
+        
+        // Create order object
+        order, err := sdk.CreateOrderObject(orderParams)
+        if err != nil {
+            log.Fatal("Failed to create order:", err)
+        }
+        
+        // Submit order
+        response, err := client.SubmitOrder(ctx, order)
+        if err != nil {
+            log.Fatal("Failed to submit order:", err)
+        }
+        
+        fmt.Printf("Order submitted successfully: %+v\n", response)
+    }
 }
 ```
 
 ## Troubleshooting
 
+### Build Issues
 - **CGO errors**: Ensure you have a C compiler installed and the Rust library is built
-- **Library not found**: Check that `liborderffi.so` exists in the root directory
+- **Library not found**: Check that `liborderffi.so` exists in the root directory and `LD_LIBRARY_PATH` is set correctly
 - **Runtime errors**: Verify the rpath is correctly set for your platform
+
+### API Issues
+- **400 Bad Request**: Check that all required fields are included in your order object and authentication headers are correct
+- **Authentication errors**: Verify your API key is valid and properly set
+- **Order validation errors**: Ensure order parameters (price, quantity, nonce) are within acceptable ranges
+
+### Testing Issues
+- **Missing environment variables**: Some tests require API keys and account credentials to be set
+- **Library loading errors**: Ensure the Rust library is built and the `LD_LIBRARY_PATH` is correctly set before running tests
 
